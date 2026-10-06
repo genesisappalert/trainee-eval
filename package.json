@@ -1,0 +1,36 @@
+{
+  "name": "mtp-appraisal",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "docxtemplater": "^3.71.0",
+    "jszip": "^3.10.2",
+    "mongoose": "^9.11.0",
+    "next": "16.3.8",
+    "next-auth": "^5.0.0-beta.32",
+    "pizzip": "^3.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "resend": "^6.32.0",
+    "signature_pad": "^5.1.4",
+    "uuid": "^14.0.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "typescript": "^5"
+  }
+}
