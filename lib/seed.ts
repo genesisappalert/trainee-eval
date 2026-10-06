@@ -64,14 +64,24 @@ export async function runSeed(force = false) {
       email: 'adewale.johnson@genesisgroup.com',
       passwordHash: defaultPasswordHash,
       accessCode: 'ADMIN-001',
-      roles: ['hr_admin'],
+      roles: ['superadmin', 'hr_admin'],
       department: 'Human Resources',
       location: 'Port Harcourt HQ',
       mustChangePassword: false,
     });
-  } else if (!hrAdmin.accessCode) {
-    hrAdmin.accessCode = 'ADMIN-001';
-    await hrAdmin.save();
+  } else {
+    let modified = false;
+    if (!hrAdmin.accessCode) {
+      hrAdmin.accessCode = 'ADMIN-001';
+      modified = true;
+    }
+    if (!hrAdmin.roles.includes('superadmin')) {
+      hrAdmin.roles.push('superadmin');
+      modified = true;
+    }
+    if (modified) {
+      await hrAdmin.save();
+    }
   }
 
   // 4. Create Supervisors

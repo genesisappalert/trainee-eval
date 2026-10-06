@@ -11,7 +11,7 @@ export interface IUser extends Document {
   email: string;
   department: string;
   location: string;
-  roles: ('supervisor' | 'hr_admin' | 'hr_viewer')[];
+  roles: ('supervisor' | 'hr_admin' | 'hr_viewer' | 'superadmin')[];
   accessCode?: string | null;
   passwordHash: string;
   mustChangePassword: boolean;
@@ -31,7 +31,7 @@ const UserSchema = new Schema<IUser>(
     department: { type: String, required: true },
     location: { type: String, required: true },
     roles: {
-      type: [{ type: String, enum: ['supervisor', 'hr_admin', 'hr_viewer'] }],
+      type: [{ type: String, enum: ['supervisor', 'hr_admin', 'hr_viewer', 'superadmin'] }],
       required: true,
       default: ['supervisor'],
     },
@@ -46,6 +46,9 @@ const UserSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
+if (process.env.NODE_ENV !== 'production') {
+  delete (mongoose.models as any).User;
+}
 export const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

@@ -29,7 +29,7 @@ export async function GET(
 
     // Authorization: supervisor must be assigned, or user must be hr_admin
     const isSupervisor = appraisal.supervisorId?.toString() === session.user.id;
-    const isHr = (session.user as any).roles?.includes('hr_admin');
+    const isHr = (session.user as any).roles?.includes('hr_admin') || (session.user as any).roles?.includes('superadmin');
 
     if (!isSupervisor && !isHr) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -114,7 +114,7 @@ export async function PUT(
     }
 
     const isSupervisor = appraisal.supervisorId?.toString() === session.user.id;
-    const isHr = (session.user as any).roles?.includes('hr_admin');
+    const isHr = (session.user as any).roles?.includes('hr_admin') || (session.user as any).roles?.includes('superadmin');
 
     if (!isSupervisor && !isHr) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -181,7 +181,7 @@ export async function POST(
     }
 
     const isSupervisor = appraisal.supervisorId?.toString() === session.user.id;
-    const isHr = (session.user as any).roles?.includes('hr_admin');
+    const isHr = (session.user as any).roles?.includes('hr_admin') || (session.user as any).roles?.includes('superadmin');
 
     if (!isSupervisor && !isHr) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

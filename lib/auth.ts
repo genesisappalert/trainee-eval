@@ -115,6 +115,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         (session.user as unknown as Record<string, unknown>).staffId = token.staffId;
         (session.user as unknown as Record<string, unknown>).roles = Array.isArray(token.roles) ? [...token.roles] : [];
         (session.user as unknown as Record<string, unknown>).mustChangePassword = token.mustChangePassword;
+
+        // Fetch fresh roles from DB if available so promoted roles reflect immediately
+        try {
+          if (token.id) {
+            await connectDB();
+            const dbUser = await User.findById(token.id).select('roles');
+            if (dbUser?.roles) {
+              (session.user as unknown as Record<string, unknown>).roles = Array.from(dbUser.roles).map(String);
+            }
+          }
+        } catch {
+          // Fall back to token.roles if DB connection fails
+        }
       }
       return session;
     },

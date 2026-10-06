@@ -42,7 +42,7 @@ export default function LoginPage() {
       } else {
         const sessionRes = await fetch('/api/auth/session');
         const sessionData = await sessionRes.json();
-        if (sessionData?.user?.roles?.includes('hr_admin')) {
+        if (sessionData?.user?.roles?.includes('hr_admin') || sessionData?.user?.roles?.includes('superadmin')) {
           router.push('/admin');
         } else {
           router.push('/supervisor');
@@ -233,6 +233,8 @@ export default function LoginPage() {
                   onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                   className="gh-input"
                   style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
                     padding: '12px 14px',
                     fontSize: 16,
                     fontWeight: 700,
@@ -280,6 +282,8 @@ export default function LoginPage() {
                 onChange={(e) => setStaffId(e.target.value)}
                 className="gh-input"
                 style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
                   fontFamily: 'var(--font-mono)',
                   letterSpacing: '0.03em',
                 }}
@@ -290,7 +294,7 @@ export default function LoginPage() {
               <label htmlFor="password" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Password:
               </label>
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative', width: '100%' }}>
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -300,6 +304,8 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="gh-input"
                   style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
                     paddingRight: 44,
                   }}
                 />

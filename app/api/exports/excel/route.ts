@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const userRoles = (session.user as any).roles || [];
-    if (!userRoles.includes('hr_admin') && !userRoles.includes('hr_viewer')) {
+    if (!userRoles.includes('hr_admin') && !userRoles.includes('superadmin') && !userRoles.includes('hr_viewer')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

@@ -15,7 +15,8 @@ function AdminSidebar() {
   const user = session?.user as Record<string, unknown> | undefined;
   const roles = (user?.roles as string[]) || [];
   const isSupervisor = roles.includes('supervisor');
-  const isAdmin = roles.includes('hr_admin');
+  const isAdmin = roles.includes('hr_admin') || roles.includes('superadmin');
+  const isSuperAdmin = roles.includes('superadmin');
 
   const navItems = [
     {
@@ -69,6 +70,16 @@ function AdminSidebar() {
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          ),
+        },
+        {
+          href: '/admin/admins',
+          label: 'Admins & Roles',
+          icon: (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <circle cx="12" cy="11" r="3" />
             </svg>
           ),
         },
@@ -185,7 +196,7 @@ function AdminSidebar() {
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{user?.name as string || 'User'}</div>
             <div className="sidebar-user-role">
-              {isAdmin ? 'HR Admin' : isSupervisor ? 'Supervisor' : 'User'}
+              {isSuperAdmin ? 'Superadmin' : isAdmin ? 'HR Admin' : isSupervisor ? 'Supervisor' : 'User'}
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

@@ -42,7 +42,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const userRoles = (session.user as any).roles || [];
-    if (!userRoles.includes('hr_admin')) {
+    if (!userRoles.includes('hr_admin') && !userRoles.includes('superadmin')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

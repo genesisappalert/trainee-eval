@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const isSupervisor = appraisal.supervisorId?.toString() === session.user.id;
-    const isHr = (session.user as any).roles?.includes('hr_admin');
+    const isHr = (session.user as any).roles?.includes('hr_admin') || (session.user as any).roles?.includes('superadmin');
 
     if (!isSupervisor && !isHr) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -15,7 +15,7 @@ function SupervisorNavbar() {
   };
 
   const user = session?.user as any;
-  const isHr = user?.roles?.includes('hr_admin');
+  const isHr = user?.roles?.includes('hr_admin') || user?.roles?.includes('superadmin');
 
   return (
     <nav style={{

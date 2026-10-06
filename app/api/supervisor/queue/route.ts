@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
 
     const user = await User.findById(session.user.id);
-    if (!user || (!user.roles.includes('supervisor') && !user.roles.includes('hr_admin'))) {
+    if (!user || (!user.roles.includes('supervisor') && !user.roles.includes('hr_admin') && !user.roles.includes('superadmin'))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

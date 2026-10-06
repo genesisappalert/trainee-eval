@@ -917,6 +917,37 @@ a:hover {
   margin-top: var(--space-1);
 }
 
+/* Genesis Feedback Input */
+.gh-input {
+  width: 100%;
+  border-radius: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  font-size: 0.875rem;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-sans);
+  transition: all 0.15s ease;
+  outline: none;
+  box-sizing: border-box;
+  display: block;
+}
+
+.gh-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  outline: none;
+}
+
+.gh-input::placeholder {
+  color: var(--text-dim);
+}
+
+.gh-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .form-input,
 .form-select,
 .form-textarea {
@@ -930,6 +961,7 @@ a:hover {
   color: var(--text-primary);
   transition: all var(--transition-fast);
   outline: none;
+  box-sizing: border-box;
 }
 
 .form-input::placeholder,
