@@ -91,7 +91,7 @@ export default function AdminCyclesPage() {
             Appraisal Cycles Management
           </h1>
           <p style={{ margin: '6px 0 0 0', color: '#64748b', fontSize: 14 }}>
-            Create and oversee periodic appraisal cohorts, set submission deadlines, and monitor real-time completion.
+            Create and oversee periodic assesment cohorts, set submission deadlines, and monitor real-time completion.
           </p>
         </div>
 
