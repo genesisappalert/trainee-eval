@@ -450,3 +450,53 @@ export async function runSeed(force = false) {
     cycleSlug: cycle.slug,
   };
 }
+
+// Enable direct CLI execution: `npx tsx lib/seed.ts`
+const isCLI = typeof process !== 'undefined' && process.argv[1]?.replace(/\\/g, '/').endsWith('lib/seed.ts');
+
+if (isCLI) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const fs = require('fs');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const path = require('path');
+
+  // Load .env.local if MONGODB_URI not set in environment
+  if (!process.env.MONGODB_URI) {
+    const envPaths = ['.env.local', '.env'];
+    for (const file of envPaths) {
+      const fullPath = path.resolve(process.cwd(), file);
+      if (fs.existsSync(fullPath)) {
+        const lines = fs.readFileSync(fullPath, 'utf8').split('\n');
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#')) {
+            const eqIdx = trimmed.indexOf('=');
+            if (eqIdx !== -1) {
+              const key = trimmed.slice(0, eqIdx).trim();
+              const val = trimmed.slice(eqIdx + 1).trim().replace(/^['"](.*)['"]$/, '$1');
+              if (!process.env[key]) {
+                process.env[key] = val;
+              }
+            }
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  const force = process.argv.includes('--force');
+  console.log(`🌱 Seeding database (force: ${force})...`);
+
+  runSeed(force)
+    .then((result) => {
+      console.log('✅ Seed completed successfully:');
+      console.log(JSON.stringify(result, null, 2));
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('❌ Seed failed:', err);
+      process.exit(1);
+    });
+}
+
