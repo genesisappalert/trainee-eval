@@ -10,7 +10,7 @@ import { IFormField } from '../models';
 export const TRAINEE_V1_TITLE = 'MANAGEMENT TRAINEE PROGRAMME (MTP) — PERIODIC PERFORMANCE ASSESSMENT — TRAINEE';
 
 export const TRAINEE_V1_PURPOSE =
-  'As part of our commitment to your growth and evaluating our overall onboarding experience, HR invites you to complete this self-assessment. This form helps us understand your transition into your unit, measure the direct impact you have delivered, evaluate training effectiveness, and identify key areas where we can support your career trajectory.';
+  'As part of our commitment to your growth and evaluating our overall onboarding experience, Genesis Academy invites you to complete this self-assessment. This form helps us understand your transition into your unit, measure the direct impact you have delivered, evaluate training effectiveness, and identify key areas where we can support your career trajectory.';
 
 export const TRAINEE_RATING_SCALE = [
   { value: 5, label: 'Strongly Agree' },
@@ -56,7 +56,7 @@ export const TRAINEE_V1_FIELDS: IFormField[] = [
     type: 'email',
     required: true,
     maxLength: 120,
-    confidential: true, // HR only (not printed)
+    confidential: false, // HR only (not printed)
     placeholder: 'not printed',
     helperText: 'We\'ll email you a private link to continue later.',
   },
@@ -148,16 +148,16 @@ export const TRAINEE_V1_FIELDS: IFormField[] = [
     label: 'My overall experience working in my assigned unit and with my line manager over the past months on the job has been positive.',
     type: 'rating',
     required: true,
-    confidential: true, // HR only
+    confidential: false, // HR only
     placeholder: '{t_r4}',
   },
   {
     id: 't_c4',
-    label: 'Comment on experience (HR only)',
+    label: 'Comment on experience',
     type: 'comment',
     required: false,
     maxLength: 200,
-    confidential: true, // HR only
+    confidential: false, // HR only
     placeholder: '{t_c4}',
     linkedTo: 't_r4',
   },
@@ -224,7 +224,7 @@ export const TRAINEE_V1_FIELDS: IFormField[] = [
     type: 'longtext',
     required: true,
     maxLength: 500,
-    confidential: true, // HR only
+    confidential: false, // HR only
     placeholder: '{t_q3}',
     helperText: 'Seen only by HR, not your supervisor.',
   },

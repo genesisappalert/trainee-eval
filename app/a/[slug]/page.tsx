@@ -741,9 +741,6 @@ export default function TraineeFormPage() {
                   <div key={fieldId} style={{ marginBottom: 'var(--space-3)' }}>
                     <div className="text-xs text-muted font-semibold" style={{ marginBottom: 2 }}>
                       {field.type === 'comment' ? 'Comment' : field.label}
-                      {field.confidential && (
-                        <span className="badge badge-warning" style={{ marginLeft: 8, fontSize: '0.625rem' }}>HR ONLY</span>
-                      )}
                     </div>
                     <div style={{ fontSize: '0.9375rem' }}>{displayValue}</div>
                   </div>
