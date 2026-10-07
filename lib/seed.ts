@@ -8,6 +8,7 @@ import {
   TraineeSheet,
   SupervisorSheet,
   AuditLog,
+  RosterEntry,
 } from './models';
 import {
   TRAINEE_V1_TITLE,
@@ -157,7 +158,7 @@ export async function runSeed(force = false) {
 
     cycle = await Cycle.create({
       slug: '2026-mid-year',
-      name: '2026 Cohort Mid-Year Appraisal',
+      name: '2026 Cohort Mid-Year Assessment',
       cohort: 'Cohort 2026-A',
       status: 'open',
       opensAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // opened 2 days ago
@@ -432,6 +433,81 @@ export async function runSeed(force = false) {
         cycleSlug: cycle.slug,
         traineeCount: 4,
       },
+    });
+  }
+
+  // 7. Seed Trainee Roster
+  const existingRoster = await RosterEntry.countDocuments({ cycleId: cycle._id });
+  if (existingRoster === 0) {
+    const app1 = await Appraisal.findOne({ cycleId: cycle._id, traineeStaffId: 'GEN-TR-042' });
+    const app2 = await Appraisal.findOne({ cycleId: cycle._id, traineeStaffId: 'GEN-TR-055' });
+    const app3 = await Appraisal.findOne({ cycleId: cycle._id, traineeStaffId: 'GEN-TR-071' });
+
+    const r1 = await RosterEntry.create({
+      cycleId: cycle._id,
+      staffId: 'GEN-TR-042',
+      name: 'Emeka Nwosu',
+      email: 'emeka.nwosu@genesisgroup.com',
+      department: 'Restaurant Operations',
+      location: 'GRA Port Harcourt',
+      expectedSupervisorId: supervisors[0]?._id || null,
+      appraisalId: app1 ? app1._id : null,
+    });
+    if (app1) {
+      app1.rosterEntryId = r1._id;
+      await app1.save();
+    }
+
+    const r2 = await RosterEntry.create({
+      cycleId: cycle._id,
+      staffId: 'GEN-TR-055',
+      name: 'Fatima Aliyu',
+      email: 'fatima.aliyu@genesisgroup.com',
+      department: 'Finance & Accounts',
+      location: 'Lagos Island',
+      expectedSupervisorId: supervisors[1]?._id || null,
+      appraisalId: app2 ? app2._id : null,
+    });
+    if (app2) {
+      app2.rosterEntryId = r2._id;
+      await app2.save();
+    }
+
+    const r3 = await RosterEntry.create({
+      cycleId: cycle._id,
+      staffId: 'GEN-TR-071',
+      name: 'Babatunde Adele',
+      email: 'babatunde.adele@genesisgroup.com',
+      department: 'Supply Chain & Logistics',
+      location: 'Trans Amadi Hub',
+      expectedSupervisorId: supervisors[2]?._id || null,
+      appraisalId: app3 ? app3._id : null,
+    });
+    if (app3) {
+      app3.rosterEntryId = r3._id;
+      await app3.save();
+    }
+
+    await RosterEntry.create({
+      cycleId: cycle._id,
+      staffId: 'GEN-TR-102',
+      name: 'Nneka Obi',
+      email: 'nneka.obi@genesisgroup.com',
+      department: 'Restaurant Operations',
+      location: 'GRA Port Harcourt',
+      expectedSupervisorId: supervisors[0]?._id || null,
+      appraisalId: null,
+    });
+
+    await RosterEntry.create({
+      cycleId: cycle._id,
+      staffId: 'GEN-TR-115',
+      name: 'Ibrahim Bello',
+      email: 'ibrahim.bello@genesisgroup.com',
+      department: 'Supply Chain & Logistics',
+      location: 'Trans Amadi Hub',
+      expectedSupervisorId: supervisors[2]?._id || null,
+      appraisalId: null,
     });
   }
 

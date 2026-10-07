@@ -7,7 +7,7 @@
 import { IFormField } from '../models';
 
 /* ── Trainee Form v1 ───────────────────────────────────────── */
-export const TRAINEE_V1_TITLE = 'MANAGEMENT TRAINEE PROGRAMME (MTP) — PERIODIC PERFORMANCE APPRAISAL — TRAINEE';
+export const TRAINEE_V1_TITLE = 'MANAGEMENT TRAINEE PROGRAMME (MTP) — PERIODIC PERFORMANCE ASSESSMENT — TRAINEE';
 
 export const TRAINEE_V1_PURPOSE =
   'As part of our commitment to your growth and evaluating our overall onboarding experience, HR invites you to complete this self-assessment. This form helps us understand your transition into your unit, measure the direct impact you have delivered, evaluate training effectiveness, and identify key areas where we can support your career trajectory.';
@@ -295,13 +295,13 @@ export const TRAINEE_STEPS = [
   {
     id: 'signature',
     title: 'Sign & Submit',
-    subtitle: 'Sign and submit your appraisal',
+    subtitle: 'Sign and submit your assessment',
     fields: ['t_signature'],
   },
 ];
 
 /* ── Supervisor Form v1 ────────────────────────────────────── */
-export const SUPERVISOR_V1_TITLE = 'MANAGEMENT TRAINEE PROGRAMME (MTP) — PERIODIC PERFORMANCE APPRAISAL — SUPERVISOR';
+export const SUPERVISOR_V1_TITLE = 'MANAGEMENT TRAINEE PROGRAMME (MTP) — PERIODIC PERFORMANCE ASSESSMENT — SUPERVISOR';
 
 export const SUPERVISOR_V1_PURPOSE =
   'To assess the trainee\'s performance, capability, application of knowledge, behavioural competencies, and leadership potential, while identifying development needs and readiness for increased responsibility.';

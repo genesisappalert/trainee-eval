@@ -128,7 +128,7 @@ export function OfficialSupervisorDocument({
               </td>
               <td className="doc-title-cell">
                 <div className="doc-header-title">MANAGEMENT TRAINEE PROGRAMME(MTP)</div>
-                <div className="doc-header-subtitle">PERIODIC PERFORMANCE APPRAISAL-SUPERVISOR</div>
+                <div className="doc-header-subtitle">PERIODIC PERFORMANCE ASSESMENT-SUPERVISOR</div>
               </td>
               <td className="doc-meta-cell">
                 <div className="doc-meta-top">
@@ -167,7 +167,7 @@ export function OfficialSupervisorDocument({
             <tr>
               <td className="doc-label-cell">Staff ID:</td>
               <td className="doc-val-cell">{data.staffId || '—'}</td>
-              <td className="doc-label-cell">Date of Appraisal:</td>
+              <td className="doc-label-cell">Date of Assessment:</td>
               <td className="doc-val-cell">
                 {isInteractive ? (
                   <input
@@ -316,7 +316,7 @@ export function OfficialSupervisorDocument({
               </td>
               <td className="doc-title-cell">
                 <div className="doc-header-title">MANAGEMENT TRAINEE PROGRAMME(MTP)</div>
-                <div className="doc-header-subtitle">PERIODIC PERFORMANCE APPRAISAL-SUPERVISOR</div>
+                <div className="doc-header-subtitle">PERIODIC PERFORMANCE ASSESMENT-SUPERVISOR</div>
               </td>
               <td className="doc-meta-cell">
                 <div className="doc-meta-top">
@@ -532,7 +532,7 @@ export function OfficialTraineeDocument({
               </td>
               <td className="doc-title-cell">
                 <div className="doc-header-title">MANAGEMENT TRAINEE PROGRAMME(MTP)</div>
-                <div className="doc-header-subtitle">PERIODIC PERFORMANCE APPRAISAL-TRAINEE</div>
+                <div className="doc-header-subtitle">PERIODIC PERFORMANCE ASSESMENT-TRAINEE</div>
               </td>
               <td className="doc-meta-cell">
                 <div className="doc-meta-top">
@@ -583,7 +583,7 @@ export function OfficialTraineeDocument({
                   a.t_staff_id || data.staffId || '—'
                 )}
               </td>
-              <td className="doc-label-cell">Date of Appraisal:</td>
+              <td className="doc-label-cell">Date of Assessment:</td>
               <td className="doc-val-cell">
                 {formattedDate}
               </td>
@@ -711,7 +711,7 @@ export function OfficialTraineeDocument({
               </td>
               <td className="doc-title-cell">
                 <div className="doc-header-title">MANAGEMENT TRAINEE PROGRAMME(MTP)</div>
-                <div className="doc-header-subtitle">PERIODIC PERFORMANCE APPRAISAL-TRAINEE</div>
+                <div className="doc-header-subtitle">PERIODIC PERFORMANCE ASSESMENT-TRAINEE</div>
               </td>
               <td className="doc-meta-cell">
                 <div className="doc-meta-top">

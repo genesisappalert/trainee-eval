@@ -20,7 +20,7 @@ export default function PrintableAppraisalPage() {
       try {
         setLoading(true);
         const res = await fetch(`/api/supervisor/assess/${appraisalId}`);
-        if (!res.ok) throw new Error('Failed to load appraisal document');
+        if (!res.ok) throw new Error('Failed to load assessment document');
         const json = await res.json();
         setData(json);
       } catch (err: any) {
@@ -36,7 +36,7 @@ export default function PrintableAppraisalPage() {
     return (
       <div style={{ padding: 60, textAlign: 'center', fontFamily: 'Arial, sans-serif' }}>
         <div className="spinner spinner-lg" style={{ margin: '0 auto 16px auto' }} />
-        <p style={{ fontWeight: 600, color: '#002147' }}>Loading pixel-perfect appraisal documents...</p>
+        <p style={{ fontWeight: 600, color: '#002147' }}>Loading pixel-perfect assessment documents...</p>
       </div>
     );
   }

@@ -244,7 +244,7 @@ export default function HrTrackerPage() {
             <span style={{ fontSize: 13, color: '#002147', fontWeight: 700 }}>Tracker</span>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: '#002147', margin: '4px 0 0 0' }}>
-            {cycle?.name || 'Appraisal Tracker'}
+            {cycle?.name || 'Assessment Tracker'}
           </h1>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: 13 }}>
             Cohort: <strong>{cycle?.cohort}</strong> • Public Link:{' '}
@@ -654,7 +654,7 @@ export default function HrTrackerPage() {
       {modalType === 'reopen' && selectedRow && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }}>
           <div style={{ background: '#fff', borderRadius: 16, maxWidth: 480, width: '100%', padding: 28 }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#002147' }}>Reopen Appraisal Submission</h3>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#002147' }}>Reopen Assessment Submission</h3>
             <p style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
               Unlock submission for trainee or supervisor to allow revisions. (PRD A-18: Mandatory Reason).
             </p>

@@ -3,9 +3,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "MTP Appraisal Platform — Genesis Group",
+  title: "MTP Assessment Platform — Genesis Group",
   description:
-    "Management Trainee Programme performance appraisal platform. Complete your self-assessment and supervisor evaluations online.",
+    "Management Trainee Programme performance assessment platform. Complete your self-assessment and supervisor evaluations online.",
   icons: {
     icon: "/genesis-logo.png",
     shortcut: "/genesis-logo.png",

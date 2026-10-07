@@ -47,7 +47,7 @@ export default function AdminExportsPage() {
           </h2>
           <p style={{ fontSize: 13, color: '#64748b', marginTop: 8, lineHeight: 1.5 }}>
             Exports all paired trainee and supervisor responses. Contains two sheets:
-            <br />• <strong>Appraisals Master:</strong> Wide format (1 row per trainee, all fields in columns)
+            <br />• <strong>Assessments Master:</strong> Wide format (1 row per trainee, all fields in columns)
             <br />• <strong>Responses Long Format:</strong> Normalized key-value rows for BI analytics
           </p>
 
@@ -95,11 +95,11 @@ export default function AdminExportsPage() {
             Print-Ready Official PDF Records
           </h2>
           <p style={{ fontSize: 13, color: '#64748b', marginTop: 8, lineHeight: 1.5 }}>
-            Access individual trainee records formatted in the official Genesis Group appraisal layout for printing, physical filing, and HR committee review.
+            Access individual trainee records formatted in the official Genesis Group assessment layout for printing, physical filing, and HR committee review.
           </p>
 
           <div style={{ marginTop: 20, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, color: '#475569' }}>
-            To print individual appraisal records with digital signatures and HR endorsements, visit the{' '}
+            To print individual assessment records with digital signatures and HR endorsements, visit the{' '}
             <strong style={{ color: '#002147' }}>Live HR Tracker</strong> and click "Print PDF" next to any completed trainee record.
           </div>
 

@@ -136,7 +136,7 @@ export default function LoginPage() {
             Genesis Group
           </h1>
           <p style={{ margin: '4px 0 0 0', color: 'var(--text-dim)', fontSize: 13, fontWeight: 500 }}>
-            Management Trainee Programme Appraisal Platform
+            Management Trainee Programme Assessment Platform
           </p>
         </div>
 
@@ -372,7 +372,7 @@ export default function LoginPage() {
         }}>
           Are you a <strong style={{ color: 'var(--text)' }}>Management Trainee</strong>?
           <br />
-          Trainees do not require a login. Access your form directly via your cohort appraisal link.
+          Trainees do not require a login. Access your form directly via your cohort assessment link.
         </div>
       </div>
     </div>

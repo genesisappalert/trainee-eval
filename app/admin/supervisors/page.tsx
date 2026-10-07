@@ -638,7 +638,7 @@ export default function AdminSupervisorsPage() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button
                 onClick={() => {
-                  const message = `Genesis Group MTP Appraisal Portal: Hi ${accessCodeModal.name}, your supervisor access code is: ${accessCodeModal.accessCode}. Simply enter it at the login page to access your trainee queue.`;
+                  const message = `Genesis Group MTP Assessment Portal: Hi ${accessCodeModal.name}, your supervisor access code is: ${accessCodeModal.accessCode}. Simply enter it at the login page to access your trainee queue.`;
                   navigator.clipboard.writeText(message);
                   alert('Login instructions copied to clipboard!');
                 }}

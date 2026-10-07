@@ -114,7 +114,7 @@ export default function SupervisorDashboard() {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
         <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#002147', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-        <p style={{ marginTop: 16, color: '#64748b', fontSize: 14 }}>Loading appraisal queue...</p>
+        <p style={{ marginTop: 16, color: '#64748b', fontSize: 14 }}>Loading assessment queue...</p>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -234,10 +234,10 @@ export default function SupervisorDashboard() {
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, background: 'var(--accent-dim)', color: 'var(--accent)', fontSize: 11, fontWeight: 700, marginBottom: 8, border: '1px solid var(--accent-border)', fontFamily: 'var(--font-mono)' }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
-            ACTIVE APPRAISAL CYCLE
+            ACTIVE ASSESSMENT CYCLE
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: '#fff' }}>
-            {currentCycle?.name || 'Management Trainee Appraisal Cycle'}
+            {currentCycle?.name || 'Management Trainee Assessment Cycle'}
           </h1>
           <p style={{ margin: '6px 0 0 0', color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
             Cohort: <strong style={{ color: '#fff', fontFamily: 'var(--font-mono)' }}>{currentCycle?.cohort || '2026'}</strong> • Supervisor Deadline:{' '}
@@ -351,7 +351,7 @@ export default function SupervisorDashboard() {
               Assigned Management Trainees
             </h2>
             <p style={{ margin: '4px 0 0 0', color: 'var(--text-dim)', fontSize: 13 }}>
-              Select a trainee to review their self-assessment and submit your supervisor appraisal.
+              Select a trainee to review their self-assessment and submit your supervisor assessment.
             </p>
           </div>
 
@@ -596,10 +596,10 @@ export default function SupervisorDashboard() {
             boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
           }}>
             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
-              Reassign Appraisal Request
+              Reassign Assessment Request
             </h3>
             <p style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
-              You are flagging that <strong>{selectedTrainee.traineeName}</strong> ({selectedTrainee.traineeStaffId}) should not be appraised by you. HR will review and reallocate this record.
+              You are flagging that <strong>{selectedTrainee.traineeName}</strong> ({selectedTrainee.traineeStaffId}) should not be assessed by you. HR will review and reallocate this record.
             </p>
 
             <div style={{ marginTop: 20 }}>
@@ -609,7 +609,7 @@ export default function SupervisorDashboard() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {[
                   { value: 'wrong_dept', label: 'Trainee belongs to another department or unit' },
-                  { value: 'rotated_out', label: 'Trainee was rotated out before this appraisal cycle' },
+                  { value: 'rotated_out', label: 'Trainee was rotated out before this assessment cycle' },
                   { value: 'not_direct_supervisor', label: 'I was not their primary supervising manager' },
                   { value: 'other', label: 'Other circumstance' },
                 ].map((opt) => (

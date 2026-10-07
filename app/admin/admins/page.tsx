@@ -200,7 +200,7 @@ export default function AdminsManagementPage() {
         : `Deactivate administrative access for ${admin.name}?`,
       detail: nextStatus
         ? `${admin.name} will be able to log in to the management console with their existing credentials.`
-        : `${admin.name} will be immediately prevented from logging into the portal. Their previous appraisal activity will remain on record.`,
+        : `${admin.name} will be immediately prevented from logging into the portal. Their previous assessment activity will remain on record.`,
       confirmLabel: nextStatus ? 'Yes, Reactivate' : 'Yes, Deactivate',
       onConfirm: async () => {
         try {
@@ -556,7 +556,7 @@ export default function AdminsManagementPage() {
             {hrAdminCount}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>
-            Cycle & appraisal managers
+            Cycle & assessment managers
           </div>
         </div>
 
@@ -1153,7 +1153,7 @@ export default function AdminsManagementPage() {
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.4 }}>
-                      Manages appraisal rounds, supervisor rosters, trainees, audits, and generates executive Excel exports.
+                      Manages assessment rounds, supervisor rosters, trainees, audits, and generates executive Excel exports.
                     </p>
                   </div>
                 </div>
@@ -1487,7 +1487,7 @@ export default function AdminsManagementPage() {
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 onClick={() => {
-                  const text = `Genesis Appraisal Portal Credentials:\nRole: ${createdSummary.role}\nStaff ID: ${createdSummary.staffId}\nPassword: ${createdSummary.password}${createdSummary.accessCode ? `\nSupervisor Code: ${createdSummary.accessCode}` : ''}\nLogin URL: ${window.location.origin}/login`;
+                  const text = `Genesis Assessment Portal Credentials:\nRole: ${createdSummary.role}\nStaff ID: ${createdSummary.staffId}\nPassword: ${createdSummary.password}${createdSummary.accessCode ? `\nSupervisor Code: ${createdSummary.accessCode}` : ''}\nLogin URL: ${window.location.origin}/login`;
                   navigator.clipboard.writeText(text);
                   triggerToast('Credentials copied to clipboard!');
                 }}

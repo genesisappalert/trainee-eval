@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       const sSheet = (a.supervisorSheetId as any)?.answers || {};
 
       return {
-        'Appraisal ID': a._id.toString(),
+        'Assessment ID': a._id.toString(),
         'Cycle Name': cycle.name,
         'Cohort': cycle.cohort,
         'Trainee Staff ID': a.traineeStaffId,
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
 
       Object.entries(tSheet).forEach(([fieldId, val]) => {
         longData.push({
-          'Appraisal ID': a._id.toString(),
+          'Assessment ID': a._id.toString(),
           'Trainee Staff ID': a.traineeStaffId,
           'Trainee Name': a.traineeName,
           'Respondent': 'Trainee',
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
 
       Object.entries(sSheet).forEach(([fieldId, val]) => {
         longData.push({
-          'Appraisal ID': a._id.toString(),
+          'Assessment ID': a._id.toString(),
           'Trainee Staff ID': a.traineeStaffId,
           'Trainee Name': a.traineeName,
           'Respondent': 'Supervisor',
@@ -123,11 +123,11 @@ export async function GET(request: NextRequest) {
     const wsWide = XLSX.utils.json_to_sheet(wideData);
     const wsLong = XLSX.utils.json_to_sheet(longData);
 
-    XLSX.utils.book_append_sheet(wb, wsWide, 'Appraisals Master');
+    XLSX.utils.book_append_sheet(wb, wsWide, 'Assessments Master');
     XLSX.utils.book_append_sheet(wb, wsLong, 'Responses Long Format');
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    const filename = `MTP_Appraisals_${cycle.slug}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filename = `MTP_Assessments_${cycle.slug}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
     return new NextResponse(buffer, {
       status: 200,

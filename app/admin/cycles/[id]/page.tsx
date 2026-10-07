@@ -202,7 +202,7 @@ export default function CycleDetailPage() {
                 checked={resultsReleased}
                 onChange={(e) => setResultsReleased(e.target.checked)}
               />
-              Release Appraisal Results to Trainees
+              Release Assessment Results to Trainees
             </label>
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, marginLeft: 24 }}>
               When enabled, trainees can view their completed supervisor ratings (excluding confidential items).

@@ -88,10 +88,10 @@ export default function AdminCyclesPage() {
       }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#002147', margin: 0, letterSpacing: '-0.02em' }}>
-            Appraisal Cycles Management
+            Assessment Cycles Management
           </h1>
           <p style={{ margin: '6px 0 0 0', color: '#64748b', fontSize: 14 }}>
-            Create and oversee periodic assesment cohorts, set submission deadlines, and monitor real-time completion.
+            Create and oversee periodic assessment cohorts, set submission deadlines, and monitor real-time completion.
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function AdminCyclesPage() {
       ) : cycles.length === 0 ? (
         <div style={{ background: '#fff', padding: 60, borderRadius: 16, textAlign: 'center', border: '1px solid #e2e8f0' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>No appraisal cycles found</h3>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>No assessment cycles found</h3>
           <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>
             Click "+ Create New Cycle" or run the seed data to create the initial cohort.
           </p>
@@ -197,7 +197,7 @@ export default function AdminCyclesPage() {
                   <div style={{ marginTop: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
                       <span style={{ color: '#334155' }}>
-                        {cycle.stats.complete} of {cycle.stats.total} Appraisals Completed
+                        {cycle.stats.complete} of {cycle.stats.total} Assessments Completed
                       </span>
                       <span style={{ color: '#002147', fontWeight: 700 }}>{completionPercent}%</span>
                     </div>

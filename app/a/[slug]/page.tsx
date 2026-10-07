@@ -193,7 +193,7 @@ export default function TraineeFormPage() {
         if (!res.ok) {
           if (data.error === 'cycle_not_open') {
             setError(
-              `This appraisal cycle "${data.name}" is currently ${data.status}. ` +
+              `This assessment cycle "${data.name}" is currently ${data.status}. ` +
               (data.opensAt ? `It opens on ${formatDate(data.opensAt)}.` : '') +
               ' Please contact HR for assistance.'
             );
@@ -207,7 +207,7 @@ export default function TraineeFormPage() {
         setSupervisors(data.supervisors);
         setLoading(false);
       } catch {
-        setError('Failed to load the appraisal form. Please try again.');
+        setError('Failed to load the assessment form. Please try again.');
         setLoading(false);
       }
     };
@@ -574,7 +574,7 @@ export default function TraineeFormPage() {
                   Specify your supervisor&apos;s name and department <span className="required">*</span>
                 </label>
                 <p className="text-xs text-muted" style={{ marginBottom: 8, color: '#78350f' }}>
-                  HR will route this appraisal to your supervisor once submitted.
+                  HR will route this assessment to your supervisor once submitted.
                 </p>
                 <input
                   type="text"
@@ -772,10 +772,10 @@ export default function TraineeFormPage() {
   /* ── Render Signature Step ─────────────────────────────── */
   const renderSignature = () => (
     <div>
-      <h3 style={{ marginBottom: 'var(--space-2)' }}>Sign Your Appraisal</h3>
+      <h3 style={{ marginBottom: 'var(--space-2)' }}>Sign Your Assessment</h3>
       <p className="text-muted text-sm" style={{ marginBottom: 'var(--space-6)' }}>
         By signing below, you confirm that the information provided is accurate and complete. 
-        Your signature will appear on the printed appraisal form.
+        Your signature will appear on the printed assessment form.
       </p>
 
       <div className="form-group">
@@ -810,7 +810,7 @@ export default function TraineeFormPage() {
         <div className="form-page-header">
           <div className="form-page-header-inner">
             <div>
-              <h1>MTP Appraisal</h1>
+              <h1>MTP Assessment</h1>
               <p>{cycle?.name}</p>
             </div>
           </div>
@@ -846,7 +846,7 @@ export default function TraineeFormPage() {
                   marginBottom: 'var(--space-4)',
                 }}>
                   <p className="text-xs text-muted" style={{ marginBottom: 'var(--space-2)' }}>
-                    <strong>Your private link</strong> — bookmark this to view your submitted appraisal:
+                    <strong>Your private link</strong> — bookmark this to view your submitted assessment:
                   </p>
                   <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                     <code className="text-xs" style={{
@@ -885,7 +885,7 @@ export default function TraineeFormPage() {
         <div className="form-page-header">
           <div className="form-page-header-inner">
             <div>
-              <h1>MTP Appraisal</h1>
+              <h1>MTP Assessment</h1>
               <p>Loading...</p>
             </div>
           </div>
@@ -894,7 +894,7 @@ export default function TraineeFormPage() {
           <div className="form-page-card">
             <div className="card" style={{ padding: 'var(--space-16)', textAlign: 'center' }}>
               <div className="spinner spinner-lg" style={{ margin: '0 auto var(--space-4)' }} />
-              <p className="text-muted">Loading appraisal form...</p>
+              <p className="text-muted">Loading assessment form...</p>
             </div>
           </div>
         </div>
@@ -909,7 +909,7 @@ export default function TraineeFormPage() {
         <div className="form-page-header">
           <div className="form-page-header-inner">
             <div>
-              <h1>MTP Appraisal</h1>
+              <h1>MTP Assessment</h1>
             </div>
           </div>
         </div>
@@ -1068,7 +1068,7 @@ export default function TraineeFormPage() {
                 onClick={handleSubmit}
                 disabled={submitting}
               >
-                {submitting ? 'Submitting...' : '✓ Submit Appraisal'}
+                {submitting ? 'Submitting...' : '✓ Submit Assessment'}
               </button>
             </div>
           </div>
@@ -1100,7 +1100,7 @@ export default function TraineeFormPage() {
               disabled={submitting}
               style={{ boxShadow: '0 4px 14px rgba(200, 16, 46, 0.4)' }}
             >
-              {submitting ? 'Submitting Appraisal...' : 'Submit Appraisal'}
+              {submitting ? 'Submitting Assessment...' : 'Submit Assessment'}
             </button>
           </div>
         </div>
@@ -1182,7 +1182,7 @@ export default function TraineeFormPage() {
                         <path d="M12 8h.01" />
                       </svg>
                       <div>
-                        <strong style={{ display: 'block', marginBottom: 4 }}>About this appraisal</strong>
+                        <strong style={{ display: 'block', marginBottom: 4 }}>About this assessment</strong>
                         {TRAINEE_V1_PURPOSE}
                       </div>
                     </div>
@@ -1215,7 +1215,7 @@ export default function TraineeFormPage() {
                           Submitting...
                         </>
                       ) : (
-                        'Submit Appraisal'
+                        'Submit Assessment'
                       )}
                     </button>
                   ) : (

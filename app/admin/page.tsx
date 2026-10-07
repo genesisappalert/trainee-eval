@@ -120,7 +120,7 @@ export default function AdminDashboard() {
             <div>
               <div className="kpi-value">{loading ? '—' : activeCycles.length}</div>
               <div className="kpi-label">Active Cycles</div>
-              <div className="kpi-sub">Ongoing appraisals</div>
+              <div className="kpi-sub">Ongoing assessments</div>
             </div>
           </div>
 
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
         {/* Active Cycles */}
         <div className="card animate-in animate-in-delay-1" style={{ marginTop: 'var(--space-6)' }}>
           <div className="card-header">
-            <h3 className="card-title">Appraisal Cycles</h3>
+            <h3 className="card-title">Assessment Cycles</h3>
             <Link href="/admin/cycles" className="btn btn-ghost btn-sm">View All</Link>
           </div>
           <div className="data-table-wrap">
@@ -244,7 +244,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="empty-state-title">No cycles yet</div>
                         <div className="empty-state-text">
-                          Create your first appraisal cycle to get started.
+                          Create your first assessment cycle to get started.
                         </div>
                         <Link href="/admin/cycles/new" className="btn btn-primary" style={{ marginTop: 'var(--space-4)' }}>
                           Create Cycle

@@ -167,7 +167,7 @@ function AdminSidebar() {
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
           </div>
-          <h2>MTP Appraisal</h2>
+          <h2>MTP Assessment</h2>
         </div>
 
         <nav className="sidebar-nav">

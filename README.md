@@ -1,6 +1,6 @@
-# Genesis Group — Management Trainee Programme (MTP) Appraisal Platform
+# Genesis Group — Management Trainee Programme (MTP) Assessment Platform
 
-A centralized, enterprise-grade performance appraisal and talent development platform designed for **Genesis Group**. The system manages the complete evaluation cycle for the Management Trainee Programme (MTP), orchestrating trainee self-assessments, supervisor evaluations, digital signatures, and HR administrative oversight.
+A centralized, enterprise-grade performance assessment and talent development platform designed for **Genesis Group**. The system manages the complete evaluation cycle for the Management Trainee Programme (MTP), orchestrating trainee self-assessments, supervisor evaluations, digital signatures, and HR administrative oversight.
 
 ---
 
@@ -34,7 +34,7 @@ A centralized, enterprise-grade performance appraisal and talent development pla
 ### 3. HR Admin & Superadmin Dashboard (`/admin`)
 - **Executive Analytics**: Real-time KPI stat cards inspired by Genesis Feedback (`Active Cycles`, `Supervisors`, `Completed Records`, `Flagged Issues`).
 - **Superadmin & Role Governance (`/admin/admins`)**: Superadmins can provision and manage other Superadmins and HR Administrators with full RBAC, dual-role privileges, password resets, and account lifecycle controls.
-- **Cycle Management**: Create and launch appraisal cycles, configure submission deadlines, and monitor real-time completion progress bars.
+- **Cycle Management**: Create and launch assessment cycles, configure submission deadlines, and monitor real-time completion progress bars.
 - **Supervisor & Trainee Management**: Map supervisors to trainees, import cohorts, and generate unique access keys.
 - **Enterprise Exports**:
   - **Excel (`.xlsx`)**: Full tabular exports containing all section responses, ratings, and summary stats.
@@ -102,7 +102,7 @@ NODE_ENV=development
 
 ### 3. Seed Initial Demo Data
 
-Run the database seed script to populate sample appraisal cycles, supervisors, and trainees:
+Run the database seed script to populate sample assessment cycles, supervisors, and trainees:
 
 ```bash
 npx tsx lib/seed.ts
@@ -138,10 +138,10 @@ After running the database seed script:
 ```text
 mtp-appraisal/
 ├── app/
-│   ├── a/[slug]/                # Trainee appraisal filling page
+│   ├── a/[slug]/                # Trainee assessment filling page
 │   ├── admin/                   # HR Admin portal (cycles, roster, exports, audit)
 │   │   ├── admins/              # Admins & Roles governance (superadmin provisioner)
-│   │   ├── cycles/              # Appraisal cycle manager & progress tracker
+│   │   ├── cycles/              # Assessment cycle manager & progress tracker
 │   │   ├── exports/             # Excel & DOCX report export center
 │   │   ├── supervisors/         # Supervisor roster & key generator
 │   │   ├── audit/               # Security & activity logs
@@ -164,7 +164,7 @@ mtp-appraisal/
 │   ├── auth.ts                  # NextAuth credentials authentication config
 │   ├── db.ts                    # MongoDB Mongoose connection manager
 │   ├── theme.tsx                # Client theme context & state persistence
-│   ├── forms/definitions.ts     # Canonical appraisal questions & rating scales
+│   ├── forms/definitions.ts     # Canonical assessment questions & rating scales
 │   ├── models/                  # Mongoose models (User, Cycle, Appraisal, Audit)
 │   └── seed.ts                  # Database seeding CLI script
 ├── public/

@@ -98,7 +98,7 @@ export default function NewCyclePage() {
           ← Back to Cycles
         </Link>
         <h1 style={{ fontSize: 26, fontWeight: 800, color: '#002147', margin: '8px 0 0 0' }}>
-          Create New Appraisal Cycle
+          Create New Assessment Cycle
         </h1>
         <p style={{ color: '#64748b', fontSize: 14, margin: '4px 0 0 0' }}>
           Configure a new cohort cycle, specify submission windows, and attach authorized supervisors.
@@ -120,7 +120,7 @@ export default function NewCyclePage() {
             <input
               type="text"
               required
-              placeholder="e.g. 2026 Cohort Annual Appraisal"
+              placeholder="e.g. 2026 Cohort Annual Assessment"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}

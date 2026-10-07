@@ -312,7 +312,7 @@ export default function AdminAuditPage() {
           boxShadow: 'var(--shadow)',
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Appraisal Submissions
+            Assessment Submissions
           </div>
           <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)', marginTop: 8 }}>
             {appraisalCount}
@@ -410,10 +410,10 @@ export default function AdminAuditPage() {
             >
               <option value="all">All Activity Categories</option>
               <option value="governance">🛡️ Admin & Role Governance</option>
-              <option value="appraisal">📝 Appraisal Evaluations</option>
+              <option value="appraisal">📝 Assessment Evaluations</option>
               <option value="supervisors">👥 Supervisor Management</option>
               <option value="reassignment">🔄 Reassignments & Unlocks</option>
-              <option value="cycle">📅 Appraisal Cycle Setup</option>
+              <option value="cycle">📅 Assessment Cycle Setup</option>
               <option value="system">⚙️ System & Initialization</option>
             </select>
           </div>

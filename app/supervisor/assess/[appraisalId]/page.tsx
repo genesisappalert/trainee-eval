@@ -200,7 +200,7 @@ export default function SupervisorAssessmentPage() {
       return;
     }
 
-    if (!confirm('Are you sure you want to submit this supervisor appraisal? Once submitted, it will be marked complete.')) {
+    if (!confirm('Are you sure you want to submit this supervisor assessment? Once submitted, it will be marked complete.')) {
       return;
     }
 
@@ -214,13 +214,13 @@ export default function SupervisorAssessmentPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to submit appraisal');
+        throw new Error(data.error || 'Failed to submit assessment');
       }
 
-      alert('Appraisal successfully submitted! Returning to queue.');
+      alert('Assessment successfully submitted! Returning to queue.');
       router.push('/supervisor');
     } catch (err: any) {
-      alert(err.message || 'Error submitting appraisal');
+      alert(err.message || 'Error submitting assessment');
     } finally {
       setSubmitting(false);
     }
@@ -239,8 +239,8 @@ export default function SupervisorAssessmentPage() {
   if (error || !appraisal) {
     return (
       <div style={{ maxWidth: 800, margin: '60px auto', padding: 24, textAlign: 'center' }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Error loading appraisal</h2>
-        <p style={{ color: '#64748b', marginTop: 8 }}>{error || 'Appraisal record not found'}</p>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Error loading assessment</h2>
+        <p style={{ color: '#64748b', marginTop: 8 }}>{error || 'Assessment record not found'}</p>
         <Link
           href="/supervisor"
           style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: '#002147', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600 }}
@@ -408,7 +408,7 @@ export default function SupervisorAssessmentPage() {
                   onClick={handleSubmit}
                   disabled={submitting}
                 >
-                  {submitting ? 'Submitting...' : '✓ Submit Appraisal'}
+                  {submitting ? 'Submitting...' : '✓ Submit Assessment'}
                 </button>
               )}
             </div>
@@ -462,7 +462,7 @@ export default function SupervisorAssessmentPage() {
               </span>
             </div>
             <p style={{ margin: '6px 0 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
-              Review the trainee's self-evaluations, achievements, and reflections below as context for your supervisor appraisal.
+              Review the trainee's self-evaluations, achievements, and reflections below as context for your supervisor assessment.
             </p>
           </div>
 
@@ -1020,7 +1020,7 @@ export default function SupervisorAssessmentPage() {
 
                   <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                      Date of Appraisal:
+                      Date of Assessment:
                     </label>
                     <input
                       type="date"
@@ -1101,11 +1101,11 @@ export default function SupervisorAssessmentPage() {
                         boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
                       }}
                     >
-                      {submitting ? 'Submitting Final Appraisal...' : '✓ Submit Completed Appraisal'}
+                      {submitting ? 'Submitting Final Assessment...' : '✓ Submit Completed Assessment'}
                     </button>
                   ) : (
                     <div style={{ color: '#16a34a', fontWeight: 700, fontSize: 14 }}>
-                      ✓ Appraisal already submitted
+                      ✓ Assessment already submitted
                     </div>
                   )}
                 </div>
