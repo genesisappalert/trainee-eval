@@ -125,6 +125,8 @@ export interface IRosterEntry extends Document {
   location: string;
   expectedSupervisorId: mongoose.Types.ObjectId | null;
   appraisalId: mongoose.Types.ObjectId | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 const RosterEntrySchema = new Schema<IRosterEntry>(

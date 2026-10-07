@@ -351,7 +351,7 @@ export default function SupervisorDashboard() {
               Assigned Management Trainees
             </h2>
             <p style={{ margin: '4px 0 0 0', color: 'var(--text-dim)', fontSize: 13 }}>
-              Select a trainee to review their self-assessment and submit your supervisor assessment.
+              Select a trainee to complete and submit your supervisor assessment.
             </p>
           </div>
 

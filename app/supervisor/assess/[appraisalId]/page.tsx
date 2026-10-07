@@ -330,7 +330,7 @@ export default function SupervisorAssessmentPage() {
                 fontFamily: 'var(--font-sans)',
               }}
             >
-              Split Workspace
+              Evaluation Form
             </button>
             <button
               type="button"
@@ -434,162 +434,15 @@ export default function SupervisorAssessmentPage() {
           />
         </div>
       ) : (
-        /* Split Workspace */
-        <div style={{ flex: 1, display: 'flex', background: '#f8fafc' }}>
-        {/* LEFT COLUMN: Trainee Self-Assessment (Read-Only) */}
-        <div style={{
-          width: '45%',
-          minWidth: 420,
-          borderRight: '1px solid #e2e8f0',
-          background: '#fff',
-          overflowY: 'auto',
-          maxHeight: 'calc(100vh - 130px)',
-          padding: '28px 32px',
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #f8fafc, #edf2f7)',
-            borderRadius: 12,
-            padding: '16px 20px',
-            marginBottom: 24,
-            border: '1px solid #e2e8f0',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#002147', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Trainee Self-Assessment
-              </span>
-              <span style={{ fontSize: 11, color: '#64748b' }}>
-                Submitted: {appraisal.traineeSubmittedAt ? new Date(appraisal.traineeSubmittedAt).toLocaleDateString('en-GB') : '—'}
-              </span>
-            </div>
-            <p style={{ margin: '6px 0 0 0', fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
-              Review the trainee's self-evaluations, achievements, and reflections below as context for your supervisor assessment.
-            </p>
-          </div>
-
-          {/* Trainee Rating Items 1 to 5 */}
-          <div style={{ marginBottom: 28 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              1. Trainee Self-Ratings (Scale 1–5)
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {[
-                { id: 't_r1', label: '1. Adaptation into unit & team integration' },
-                { id: 't_r2', label: '2. Delivery of assigned operational tasks & KPIs' },
-                { id: 't_r3', label: '3. Technical understanding of systems & procedures' },
-                { id: 't_r4', label: '4. Supervisory relationship & coaching feedback', isConfidential: true },
-                { id: 't_r5', label: '5. Alignment with Genesis brand values & culture' },
-              ].map((item) => (
-                <div key={item.id} style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>{item.label}</span>
-                    {item.isConfidential ? (
-                      <span style={{ fontSize: 11, color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                        🔒 Redacted (HR Confidential)
-                      </span>
-                    ) : (
-                      <span style={{
-                        fontWeight: 700,
-                        fontSize: 13,
-                        color: traineeAnswers[item.id] ? '#002147' : '#94a3b8',
-                        background: '#e2e8f0',
-                        padding: '2px 8px',
-                        borderRadius: 4
-                      }}>
-                        {traineeAnswers[item.id] ? `${traineeAnswers[item.id]} / 5` : 'Not Rated'}
-                      </span>
-                    )}
-                  </div>
-
-                  {item.isConfidential ? (
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6, fontStyle: 'italic' }}>
-                      [Confidential to HR: Supervisor relationship evaluations are withheld from supervisor view per PRD T-11]
-                    </div>
-                  ) : traineeAnswers[`${item.id}_comment`] ? (
-                    <div style={{ marginTop: 8, fontSize: 12, color: '#475569', background: '#fff', padding: 10, borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                      "{traineeAnswers[`${item.id}_comment`]}"
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Trainee Open Questions */}
-          <div style={{ marginBottom: 28 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              2. Key Contributions & Reflections
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                  Three Notable Achievements / Contributions:
-                </div>
-                <div style={{ fontSize: 12, color: '#475569', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div><strong>1.</strong> {traineeAnswers.t_q1a || '—'}</div>
-                  <div><strong>2.</strong> {traineeAnswers.t_q1b || '—'}</div>
-                  <div><strong>3.</strong> {traineeAnswers.t_q1c || '—'}</div>
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                  Challenges Encountered & How Resolved:
-                </div>
-                <div style={{ fontSize: 12, color: '#475569' }}>
-                  {traineeAnswers.t_q2 || '—'}
-                </div>
-              </div>
-
-              {/* Confidential Question t_q3 */}
-              <div style={{ background: '#fffbeb', padding: 14, borderRadius: 8, border: '1px solid #fde68a' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#92400e' }}>
-                    Identified Development Support Needs:
-                  </div>
-                  <span style={{ fontSize: 11, color: '#92400e', background: '#fef3c7', padding: '2px 8px', borderRadius: 4, fontWeight: 600 }}>
-                    🔒 Redacted (HR Confidential)
-                  </span>
-                </div>
-                <div style={{ fontSize: 11, color: '#78350f', fontStyle: 'italic' }}>
-                  [Confidential to HR: Trainee growth requests & private concerns are reserved for HR L&D review]
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                  Future Career Aspiration in Genesis Group:
-                </div>
-                <div style={{ fontSize: 12, color: '#475569' }}>
-                  {traineeAnswers.t_q4 || '—'}
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>Trainee Self-Rating:</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#002147', textTransform: 'capitalize' }}>
-                    {traineeAnswers.t_overall ? traineeAnswers.t_overall.replace('_', ' ') : '—'}
-                  </span>
-                </div>
-                {traineeAnswers.t_signature_name && (
-                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>
-                    Signed by: <strong>{traineeAnswers.t_signature_name}</strong> on {traineeAnswers.t_signature_date}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Supervisor Appraisal Form */}
+        /* Supervisor Assessment Form */
         <div style={{
           flex: 1,
           overflowY: 'auto',
           maxHeight: 'calc(100vh - 130px)',
-          padding: '28px 40px',
+          padding: '32px 24px',
+          background: '#f8fafc',
         }}>
+          <div style={{ maxWidth: 880, margin: '0 auto' }}>
           {/* Step Indicator */}
           <div style={{
             display: 'flex',
