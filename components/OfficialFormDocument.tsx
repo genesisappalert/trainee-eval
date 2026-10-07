@@ -258,7 +258,7 @@ export function OfficialSupervisorDocument({
           <thead>
             <tr>
               <th style={{ width: '52%', textAlign: 'left' }}>Assessment Area</th>
-              <th style={{ width: '15%', textAlign: 'center' }}>Rating (1–4)</th>
+              <th style={{ width: '15%', textAlign: 'center' }}>Rating (1–5)</th>
               <th style={{ width: '33%', textAlign: 'left' }}>Supervisor Comments</th>
             </tr>
           </thead>
