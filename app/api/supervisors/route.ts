@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import connectDB from '@/lib/db';
-import { User, Appraisal, AuditLog } from '@/lib/models';
+import { User, Appraisal, AuditLog, Cycle } from '@/lib/models';
 import bcrypt from 'bcryptjs';
 
 function generateAccessCode(): string {
@@ -123,6 +123,16 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      if (createdList.length > 0) {
+        const createdUsers = await User.find({ staffId: { $in: createdList.map((c) => c.staffId) } }).select('_id');
+        if (createdUsers.length > 0) {
+          await Cycle.updateMany(
+            { status: { $in: ['open', 'draft'] } },
+            { $addToSet: { supervisorIds: { $each: createdUsers.map((u) => u._id) } } }
+          );
+        }
+      }
+
       await AuditLog.create({
         actorId: session.user.id,
         actorRole: 'hr_admin',
@@ -171,6 +181,11 @@ export async function POST(request: NextRequest) {
       mustChangePassword: false,
       active: true,
     });
+
+    await Cycle.updateMany(
+      { status: { $in: ['open', 'draft'] } },
+      { $addToSet: { supervisorIds: newUser._id } }
+    );
 
     await AuditLog.create({
       actorId: session.user.id,

@@ -32,24 +32,13 @@ export async function GET(
     // Get the form version
     const formVersion = await FormVersion.findById(cycle.traineeFormVersionId);
 
-    // Get supervisors attached to this cycle
-    let supervisors = await User.find({
-      _id: { $in: cycle.supervisorIds },
+    // Get all active supervisors so any newly created supervisors in the DB are always selectable
+    const supervisors = await User.find({
       active: true,
       roles: 'supervisor',
     })
       .select('_id name staffId department')
       .sort({ name: 1 });
-
-    // Fallback: If no supervisors assigned to cycle, return all active supervisors
-    if (!supervisors || supervisors.length === 0) {
-      supervisors = await User.find({
-        active: true,
-        roles: 'supervisor',
-      })
-        .select('_id name staffId department')
-        .sort({ name: 1 });
-    }
 
     return NextResponse.json({
       cycle: {

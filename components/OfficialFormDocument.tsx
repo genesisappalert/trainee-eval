@@ -621,7 +621,7 @@ export function OfficialTraineeDocument({
             <tr>
               <td className="doc-label-cell">Purpose</td>
               <td className="doc-val-cell" colSpan={3} style={{ fontSize: 11.5, textAlign: 'justify', lineHeight: 1.45 }}>
-                As part of our commitment to your growth and evaluating our overall onboarding experience, HR invites you to complete this self-assessment. This form helps us understand your transition into your unit, measure the direct impact you have delivered, evaluate training effectiveness, and identify key areas where we can support your career trajectory.
+                As part of our commitment to your growth and evaluating our overall onboarding experience, Genesis Academy invites you to complete this self-assessment. This form helps us understand your transition into your unit, measure the direct impact you have delivered, evaluate training effectiveness, and identify key areas where we can support your career trajectory.
               </td>
             </tr>
           </tbody>

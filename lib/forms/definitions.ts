@@ -71,7 +71,7 @@ export const TRAINEE_V1_FIELDS: IFormField[] = [
   },
   {
     id: 't_department',
-    label: 'Department/Business Unit',
+    label: 'Department & Business Unit',
     type: 'text',
     required: true,
     maxLength: 60,
@@ -350,7 +350,7 @@ export const SUPERVISOR_V1_FIELDS: IFormField[] = [
   },
   {
     id: 's_department',
-    label: 'Department/Business Unit',
+    label: 'Department & Business Unit',
     type: 'text',
     required: true,
     maxLength: 60,

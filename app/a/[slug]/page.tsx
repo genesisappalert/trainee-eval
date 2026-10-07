@@ -412,15 +412,6 @@ export default function TraineeFormPage() {
     const err = validationErrors[fieldId];
 
     // Confidential notice
-    const confidentialNotice = field.confidential ? (
-      <div className="confidential-notice">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-        </svg>
-        Seen only by HR, not your supervisor.
-      </div>
-    ) : null;
 
     switch (field.type) {
       case 'text':
@@ -431,7 +422,6 @@ export default function TraineeFormPage() {
               {field.label} {field.required && <span className="required">*</span>}
             </label>
             {field.helperText && <p className="form-hint">{field.helperText}</p>}
-            {confidentialNotice}
             <input
               id={fieldId}
               type={field.type}
@@ -455,15 +445,15 @@ export default function TraineeFormPage() {
         // Supervisor searchable dropdown
         const filteredSupervisors = supervisors.filter(
           (s) =>
-            s.name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
-            s.department.toLowerCase().includes(supervisorSearch.toLowerCase())
+            (s.name || '').toLowerCase().includes(supervisorSearch.toLowerCase()) ||
+            (s.department || '').toLowerCase().includes(supervisorSearch.toLowerCase())
         );
         const selectedSupervisor = supervisors.find((s) => s.id === value);
         const displayValue = showSupervisorDropdown
           ? supervisorSearch
           : value === 'unassigned'
-          ? "⚠️ My supervisor isn't listed"
-          : (selectedSupervisor?.name || '');
+            ? "⚠️ My supervisor isn't listed"
+            : (selectedSupervisor?.name || '');
 
         return (
           <div className="form-group" key={fieldId}>
@@ -598,7 +588,6 @@ export default function TraineeFormPage() {
             <label className="form-label" style={{ fontSize: '0.9375rem', lineHeight: 1.5 }}>
               {field.label} {field.required && <span className="required">*</span>}
             </label>
-            {confidentialNotice}
             <div className="rating-group">
               {TRAINEE_RATING_SCALE.map((opt) => (
                 <div className="rating-option" key={opt.value}>
@@ -624,7 +613,6 @@ export default function TraineeFormPage() {
       case 'comment':
         return (
           <div className="form-group" key={fieldId} style={{ marginTop: '-0.5rem', marginBottom: '2rem' }}>
-            {confidentialNotice}
             <textarea
               id={fieldId}
               className="form-textarea"
@@ -651,7 +639,6 @@ export default function TraineeFormPage() {
               {field.label} {field.required && <span className="required">*</span>}
             </label>
             {field.helperText && <p className="form-hint">{field.helperText}</p>}
-            {confidentialNotice}
             <textarea
               id={fieldId}
               className={`form-textarea ${err ? 'error' : ''}`}
@@ -774,7 +761,7 @@ export default function TraineeFormPage() {
     <div>
       <h3 style={{ marginBottom: 'var(--space-2)' }}>Sign Your Assessment</h3>
       <p className="text-muted text-sm" style={{ marginBottom: 'var(--space-6)' }}>
-        By signing below, you confirm that the information provided is accurate and complete. 
+        By signing below, you confirm that the information provided is accurate and complete.
         Your signature will appear on the printed assessment form.
       </p>
 
@@ -834,7 +821,7 @@ export default function TraineeFormPage() {
               </div>
               <h2 style={{ marginBottom: 'var(--space-2)' }}>Submitted Successfully!</h2>
               <p className="text-muted" style={{ maxWidth: 480, margin: '0 auto var(--space-6)' }}>
-                Your self-assessment has been submitted and sent to your supervisor for review. 
+                Your self-assessment has been submitted and sent to your supervisor for review.
                 You&apos;ll receive an email confirmation shortly.
               </p>
 
@@ -868,7 +855,7 @@ export default function TraineeFormPage() {
               )}
 
               <p className="text-xs text-muted">
-                When your supervisor completes their assessment and HR releases the results, 
+                When your supervisor completes their assessment and HR releases the results,
                 you&apos;ll receive an email with a link to view their feedback.
               </p>
             </div>
