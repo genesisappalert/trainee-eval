@@ -33,6 +33,13 @@ function formatHumanNarrative(
         summary: `Created administrative profile for ${meta.createdName || targetName || 'Administrator'} (Staff ID: ${meta.createdStaffId || 'N/A'}).`,
       };
 
+    case 'admins_bulk_created':
+      return {
+        actionLabel: 'Bulk Imported Administrators',
+        category: 'governance',
+        summary: `Bulk provisioned ${meta.count ?? 'multiple'} administrative accounts via spreadsheet import (${meta.errorsCount ?? 0} errors).`,
+      };
+
     case 'admin_deleted':
       return {
         actionLabel: 'Permanently Deleted Admin',

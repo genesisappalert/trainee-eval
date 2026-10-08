@@ -79,6 +79,136 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // ── Bulk Import Handler ──────────────────────────────────────
+    const userBatch = Array.isArray(body.admins)
+      ? body.admins
+      : Array.isArray(body.users)
+      ? body.users
+      : null;
+
+    if (userBatch) {
+      const createdList: any[] = [];
+      const errors: any[] = [];
+      const batchStaffIds = new Set<string>();
+      const batchEmails = new Set<string>();
+
+      for (const [idx, item] of userBatch.entries()) {
+        const rowNum = idx + 1;
+        try {
+          if (!item.staffId || !item.name || !item.email) {
+            errors.push({ row: rowNum, error: 'Staff ID, Full Name, and Email are required.' });
+            continue;
+          }
+
+          const cleanStaffId = String(item.staffId).trim().toUpperCase();
+          const cleanEmail = String(item.email).trim().toLowerCase();
+
+          if (batchStaffIds.has(cleanStaffId)) {
+            errors.push({ row: rowNum, staffId: cleanStaffId, error: 'Duplicate Staff ID within this import batch.' });
+            continue;
+          }
+          if (batchEmails.has(cleanEmail)) {
+            errors.push({ row: rowNum, email: cleanEmail, error: 'Duplicate Email address within this import batch.' });
+            continue;
+          }
+
+          const normalizedRole = item.role === 'superadmin' ? 'superadmin' : 'hr_admin';
+
+          // RBAC: Only Superadmins can provision other Superadmins
+          if (normalizedRole === 'superadmin' && !isSuperAdmin) {
+            errors.push({
+              row: rowNum,
+              staffId: cleanStaffId,
+              error: 'Forbidden: Only Superadmins can provision Superadmin accounts.',
+            });
+            continue;
+          }
+
+          // Check database conflict
+          const existing = await User.findOne({
+            $or: [{ staffId: cleanStaffId }, { email: cleanEmail }],
+          });
+          if (existing) {
+            const conflict = existing.staffId === cleanStaffId ? 'Staff ID already exists' : 'Email already in use';
+            errors.push({ row: rowNum, staffId: cleanStaffId, error: conflict });
+            continue;
+          }
+
+          const rawPassword =
+            item.password && String(item.password).trim().length >= 6
+              ? String(item.password).trim()
+              : 'Gen#' + Math.floor(100000 + Math.random() * 900000) + '!';
+
+          const passwordHash = await bcrypt.hash(rawPassword, 10);
+          const isSup = Boolean(item.isSupervisorAlso || item.isSupervisor || item.supervisorPrivilege);
+          const accessCode = isSup ? (item.accessCode?.trim().toUpperCase() || generateAccessCode()) : null;
+
+          const assignedRoles: ('supervisor' | 'hr_admin' | 'hr_viewer' | 'superadmin')[] = [normalizedRole];
+          if (normalizedRole === 'superadmin' && !assignedRoles.includes('hr_admin')) {
+            assignedRoles.push('hr_admin');
+          }
+          if (isSup && !assignedRoles.includes('supervisor')) {
+            assignedRoles.push('supervisor');
+          }
+
+          const newUser = await User.create({
+            staffId: cleanStaffId,
+            name: String(item.name).trim(),
+            email: cleanEmail,
+            department: item.department?.trim() || 'Human Resources',
+            location: item.location?.trim() || 'HQ Port Harcourt',
+            roles: assignedRoles,
+            accessCode,
+            passwordHash,
+            mustChangePassword: false,
+            active: true,
+          });
+
+          batchStaffIds.add(cleanStaffId);
+          batchEmails.add(cleanEmail);
+
+          createdList.push({
+            _id: newUser._id.toString(),
+            staffId: newUser.staffId,
+            name: newUser.name,
+            email: newUser.email,
+            department: newUser.department,
+            location: newUser.location,
+            role: normalizedRole,
+            roles: newUser.roles,
+            password: rawPassword,
+            accessCode: newUser.accessCode,
+          });
+        } catch (e: any) {
+          errors.push({ row: rowNum, error: e.message || 'Error creating user' });
+        }
+      }
+
+      if (createdList.length > 0) {
+        await AuditLog.create({
+          actorId: session.user.id,
+          actorRole: isSuperAdmin ? 'superadmin' : 'hr_admin',
+          action: 'admins_bulk_created',
+          targetType: 'user',
+          targetId: 'bulk',
+          metadata: {
+            count: createdList.length,
+            errorsCount: errors.length,
+            createdStaffIds: createdList.map((c) => c.staffId),
+            creatorStaffId: (session.user as any).staffId || session.user.id,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        created: createdList,
+        errors,
+        totalSubmitted: userBatch.length,
+      });
+    }
+
+    // ── Single Creation Handler ──────────────────────────────────
     const {
       staffId,
       name,
