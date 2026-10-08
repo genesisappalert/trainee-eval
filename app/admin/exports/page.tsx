@@ -95,29 +95,63 @@ export default function AdminExportsPage() {
             Print-Ready Official PDF Records
           </h2>
           <p style={{ fontSize: 13, color: '#64748b', marginTop: 8, lineHeight: 1.5 }}>
-            Access individual trainee records formatted in the official Genesis Group assessment layout for printing, physical filing, and HR committee review.
+            Generate pixel-perfect official Genesis Group assessment bundles for cohort archival, committee reviews, and physical personnel filing.
           </p>
 
-          <div style={{ marginTop: 20, background: '#f8fafc', padding: 14, borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, color: '#475569' }}>
-            To print individual assessment records with digital signatures and HR endorsements, visit the{' '}
-            <strong style={{ color: '#002147' }}>Live HR Tracker</strong> and click "Print PDF" next to any completed trainee record.
+          <div style={{ marginTop: 20 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              Select Cohort / Cycle:
+            </label>
+            <select
+              value={selectedCycleId}
+              onChange={(e) => setSelectedCycleId(e.target.value)}
+              style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, outline: 'none' }}
+            >
+              {cycles.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name} ({c.cohort})
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div style={{ marginTop: 28 }}>
+          <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
             <a
-              href="/admin/cycles"
+              href={`/admin/print/bulk?cycleId=${selectedCycleId}&status=complete`}
+              target="_blank"
+              rel="noreferrer"
               style={{
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
                 padding: '11px 22px',
                 borderRadius: 8,
-                background: '#002147',
+                background: '#c8102e',
                 color: '#fff',
                 textDecoration: 'none',
                 fontWeight: 700,
                 fontSize: 13,
+                boxShadow: '0 2px 8px rgba(200, 16, 46, 0.3)',
               }}
             >
-              Go to HR Tracker →
+              🖨️ Bulk Print Cohort Bundle (PDF) ↗
+            </a>
+
+            <a
+              href={`/admin/cycles/${selectedCycleId}/tracker`}
+              style={{
+                display: 'inline-block',
+                padding: '11px 18px',
+                borderRadius: 8,
+                background: '#f1f5f9',
+                color: '#334155',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: 13,
+                border: '1px solid #cbd5e1',
+              }}
+            >
+              Custom Select in Tracker →
             </a>
           </div>
         </div>

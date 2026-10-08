@@ -36,6 +36,7 @@ export default function HrTrackerPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deptFilter, setDeptFilter] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Modals
   const [selectedRow, setSelectedRow] = useState<TrackerRow | null>(null);
@@ -261,6 +262,25 @@ export default function HrTrackerPage() {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link
+            href={`/admin/print/bulk?cycleId=${id}&status=complete`}
+            style={{
+              padding: '9px 18px',
+              borderRadius: 8,
+              background: '#002147',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 2px 6px rgba(0, 33, 71, 0.2)',
+            }}
+          >
+            🖨️ Bulk Print Completed ({counters.complete || 0})
+          </Link>
+
           <a
             href={`/api/exports/excel?cycleId=${id}`}
             style={{
@@ -436,6 +456,20 @@ export default function HrTrackerPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
+                  <th style={{ width: 36, padding: '12px 10px 12px 16px', textAlign: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={filteredRows.length > 0 && selectedIds.length === filteredRows.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(filteredRows.map((r) => r._id));
+                        } else {
+                          setSelectedIds([]);
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </th>
                   <th style={{ padding: '12px 16px' }}>Trainee Name & Staff ID</th>
                   <th style={{ padding: '12px 14px' }}>Unit / Location</th>
                   <th style={{ padding: '12px 14px' }}>Supervisor</th>
@@ -450,10 +484,32 @@ export default function HrTrackerPage() {
                 {filteredRows.map((row) => (
                   <tr
                     key={row._id}
-                    style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    style={{
+                      borderBottom: '1px solid #f1f5f9',
+                      transition: 'background 0.15s',
+                      background: selectedIds.includes(row._id) ? '#f0fdf4' : 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selectedIds.includes(row._id)) e.currentTarget.style.background = '#f8fafc';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!selectedIds.includes(row._id)) e.currentTarget.style.background = 'transparent';
+                    }}
                   >
+                    <td style={{ width: 36, padding: '14px 10px 14px 16px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(row._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIds((prev) => [...prev, row._id]);
+                          } else {
+                            setSelectedIds((prev) => prev.filter((id) => id !== row._id));
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </td>
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 700, color: '#0f172a' }}>{row.traineeName}</div>
                       <div style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>{row.traineeStaffId}</div>
@@ -787,6 +843,65 @@ export default function HrTrackerPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Floating Batch Selection Bar */}
+      {selectedIds.length > 0 && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#002147',
+            color: '#fff',
+            padding: '12px 24px',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            zIndex: 90,
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700 }}>
+            {selectedIds.length} {selectedIds.length === 1 ? 'record' : 'records'} selected
+          </span>
+          <Link
+            href={`/admin/print/bulk?ids=${selectedIds.join(',')}`}
+            style={{
+              padding: '7px 16px',
+              background: '#c8102e',
+              color: '#fff',
+              borderRadius: 6,
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: 12,
+              boxShadow: '0 2px 6px rgba(200, 16, 46, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            🖨️ Print Selected Bundle ({selectedIds.length})
+          </Link>
+          <button
+            onClick={() => setSelectedIds([])}
+            style={{
+              padding: '6px 12px',
+              background: 'rgba(255,255,255,0.15)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              fontSize: 12,
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Clear Selection
+          </button>
         </div>
       )}
     </div>
