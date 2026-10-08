@@ -117,6 +117,25 @@ export default function AdminExportsPage() {
 
           <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
             <a
+              href={`/api/exports/zip?cycleId=${selectedCycleId}&status=complete`}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '11px 22px',
+                borderRadius: 8,
+                background: '#16a34a',
+                color: '#fff',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: 13,
+                boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)',
+              }}
+            >
+              📦 Download Cohort ZIP (.zip)
+            </a>
+
+            <a
               href={`/admin/print/bulk?cycleId=${selectedCycleId}&status=complete`}
               target="_blank"
               rel="noreferrer"
@@ -124,7 +143,7 @@ export default function AdminExportsPage() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 8,
-                padding: '11px 22px',
+                padding: '11px 20px',
                 borderRadius: 8,
                 background: '#c8102e',
                 color: '#fff',
@@ -134,7 +153,7 @@ export default function AdminExportsPage() {
                 boxShadow: '0 2px 8px rgba(200, 16, 46, 0.3)',
               }}
             >
-              🖨️ Bulk Print Cohort Bundle (PDF) ↗
+              🖨️ Open Print & Split Viewer ↗
             </a>
 
             <a
@@ -151,7 +170,7 @@ export default function AdminExportsPage() {
                 border: '1px solid #cbd5e1',
               }}
             >
-              Custom Select in Tracker →
+              Tracker Selection →
             </a>
           </div>
         </div>

@@ -278,8 +278,27 @@ export default function HrTrackerPage() {
               boxShadow: '0 2px 6px rgba(0, 33, 71, 0.2)',
             }}
           >
-            🖨️ Bulk Print Completed ({counters.complete || 0})
+            🖨️ Print / Split ({counters.complete || 0})
           </Link>
+
+          <a
+            href={`/api/exports/zip?cycleId=${id}&status=complete`}
+            style={{
+              padding: '9px 18px',
+              borderRadius: 8,
+              background: '#047857',
+              color: '#fff',
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: 13,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              boxShadow: '0 2px 6px rgba(4, 120, 87, 0.2)',
+            }}
+          >
+            📦 Export ZIP ({counters.complete || 0})
+          </a>
 
           <a
             href={`/api/exports/excel?cycleId=${id}`}
@@ -885,8 +904,26 @@ export default function HrTrackerPage() {
               gap: 6,
             }}
           >
-            🖨️ Print Selected Bundle ({selectedIds.length})
+            🖨️ Print Selected ({selectedIds.length})
           </Link>
+          <a
+            href={`/api/exports/zip?ids=${selectedIds.join(',')}`}
+            style={{
+              padding: '7px 16px',
+              background: '#16a34a',
+              color: '#fff',
+              borderRadius: 6,
+              textDecoration: 'none',
+              fontWeight: 700,
+              fontSize: 12,
+              boxShadow: '0 2px 6px rgba(22, 163, 74, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            📦 Export ZIP ({selectedIds.length})
+          </a>
           <button
             onClick={() => setSelectedIds([])}
             style={{
