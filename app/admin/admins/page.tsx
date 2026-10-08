@@ -77,6 +77,103 @@ export default function AdminsManagementPage() {
   } | null>(null);
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
 
+  // Bulk Import State
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkCsvText, setBulkCsvText] = useState('');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkTab, setBulkTab] = useState<'paste' | 'file'>('paste');
+  const [bulkResult, setBulkResult] = useState<{ created: any[]; errors: any[] } | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
+  const sampleCsvTemplate = `Staff ID, Full Name, Email, Department, Location, Role, Password, Supervisor Privilege
+GEN-ADM-002, Mary Danjuma, mary.danjuma@genesisgroup.com, Human Resources, HQ Port Harcourt, hr_admin, Password123!, yes
+GEN-ROOT-004, Ibrahim Musa, ibrahim.musa@genesisgroup.com, Executive Management, Lagos Office, superadmin, Password123!, no`;
+
+  const parseAdminsFromCsv = (text: string) => {
+    const lines = text.trim().split(/\r?\n/);
+    const parsed: Array<{
+      staffId: string;
+      name: string;
+      email: string;
+      department: string;
+      location: string;
+      role: 'superadmin' | 'hr_admin';
+      password?: string;
+      isSupervisorAlso?: boolean;
+    }> = [];
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      const parts = line.split(/[,\t;]/).map((p) => p.trim().replace(/^["']|["']$/g, ''));
+      if (parts.length < 3) continue;
+      const firstCol = parts[0].toLowerCase();
+      if (firstCol.includes('staff') || firstCol === 'id' || firstCol === 'staff_id') continue;
+
+      const rawRole = (parts[5] || '').toLowerCase().replace(/[\s_-]/g, '');
+      const isSuper = rawRole.includes('super');
+      const isSupAlso = ['yes', 'true', '1', 'y'].includes((parts[7] || '').toLowerCase());
+
+      parsed.push({
+        staffId: parts[0] || '',
+        name: parts[1] || '',
+        email: parts[2] || '',
+        department: parts[3] || 'Human Resources',
+        location: parts[4] || 'HQ Port Harcourt',
+        role: isSuper ? 'superadmin' : 'hr_admin',
+        password: parts[6] || '',
+        isSupervisorAlso: isSupAlso,
+      });
+    }
+    return parsed;
+  };
+
+  const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setBulkCsvText(content);
+        setBulkTab('paste');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleBulkImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBulkError(null);
+    const parsed = parseAdminsFromCsv(bulkCsvText);
+    if (parsed.length === 0) {
+      setBulkError('No valid rows found in CSV. Please verify formatting.');
+      return;
+    }
+
+    try {
+      setBulkSubmitting(true);
+      const res = await fetch('/api/admins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admins: parsed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Bulk upload failed');
+
+      setBulkResult({
+        created: data.created || [],
+        errors: data.errors || [],
+      });
+      triggerToast(`Imported ${data.created?.length || 0} administrators successfully.`);
+      fetchAdmins();
+    } catch (err: any) {
+      setBulkError(err.message);
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   const fetchAdmins = async () => {
     try {
       setLoading(true);
@@ -449,6 +546,35 @@ export default function AdminsManagementPage() {
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
             </svg>
             Refresh
+          </button>
+          <button
+            onClick={() => {
+              setBulkError(null);
+              setBulkResult(null);
+              setBulkCsvText('');
+              setBulkModalOpen(true);
+            }}
+            style={{
+              padding: '11px 18px',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-card)',
+              color: 'var(--text)',
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: 'var(--shadow)',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            📂 Bulk CSV Import
           </button>
           <button
             onClick={handleOpenCreateModal}
@@ -1781,6 +1907,481 @@ export default function AdminsManagementPage() {
                 {confirmSubmitting ? 'Processing...' : confirmDialog.confirmLabel}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* BULK IMPORT USERS & ADMINS MODAL */}
+      {bulkModalOpen && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.68)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: 16,
+        }}>
+          <div style={{
+            background: 'var(--bg-card)',
+            borderRadius: 16,
+            maxWidth: 720,
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            border: '1px solid var(--border)',
+            boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
+            animation: 'fadeIn 0.2s ease',
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>
+                  Bulk Import Administrators & Users
+                </h2>
+                <p style={{ margin: '4px 0 0 0', fontSize: 13, color: 'var(--text-dim)' }}>
+                  Upload a spreadsheet or paste CSV rows to provision multiple accounts simultaneously.
+                </p>
+              </div>
+              <button
+                onClick={() => setBulkModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: 22,
+                  color: 'var(--text-dim)',
+                  cursor: 'pointer',
+                  padding: 4,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Results Screen */}
+            {bulkResult ? (
+              <div style={{ padding: 24 }}>
+                <div style={{
+                  padding: 16,
+                  borderRadius: 12,
+                  background: bulkResult.errors.length === 0 ? 'rgba(22, 163, 74, 0.08)' : 'rgba(217, 119, 6, 0.08)',
+                  border: `1px solid ${bulkResult.errors.length === 0 ? 'rgba(22, 163, 74, 0.25)' : 'rgba(217, 119, 6, 0.25)'}`,
+                  marginBottom: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}>
+                  <div>
+                    <div style={{
+                      fontWeight: 800,
+                      fontSize: 15,
+                      color: bulkResult.errors.length === 0 ? '#16A34A' : '#D97706',
+                    }}>
+                      {bulkResult.errors.length === 0
+                        ? `🎉 Successfully Imported ${bulkResult.created.length} Users`
+                        : `Import Finished: ${bulkResult.created.length} Created, ${bulkResult.errors.length} Skipped`}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4 }}>
+                      Review credentials below before closing this modal.
+                    </div>
+                  </div>
+                  {bulkResult.created.length > 0 && (
+                    <button
+                      onClick={() => {
+                        const lines = [
+                          'Genesis Appraisal Platform — Created User Credentials',
+                          '-----------------------------------------------------',
+                          ...bulkResult.created.map(
+                            (c) =>
+                              `Role: ${c.role.toUpperCase()} | Staff ID: ${c.staffId} | Name: ${c.name} | Email: ${c.email} | Temp Password: ${c.password}${c.accessCode ? ` | Supervisor Code: ${c.accessCode}` : ''}`
+                          ),
+                        ].join('\n');
+                        navigator.clipboard.writeText(lines);
+                        triggerToast('All credentials copied to clipboard!');
+                      }}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: 8,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg)',
+                        color: 'var(--text)',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      📋 Copy All Credentials
+                    </button>
+                  )}
+                </div>
+
+                {/* Table of Created Accounts */}
+                {bulkResult.created.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                      Successfully Created Accounts ({bulkResult.created.length}):
+                    </div>
+                    <div style={{
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                    }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', color: 'var(--text-dim)', textAlign: 'left' }}>
+                            <th style={{ padding: '8px 12px' }}>Staff ID</th>
+                            <th style={{ padding: '8px 12px' }}>Name</th>
+                            <th style={{ padding: '8px 12px' }}>Role</th>
+                            <th style={{ padding: '8px 12px' }}>Password</th>
+                            <th style={{ padding: '8px 12px' }}>Supervisor Code</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkResult.created.map((c, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                              <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{c.staffId}</td>
+                              <td style={{ padding: '8px 12px' }}>{c.name}</td>
+                              <td style={{ padding: '8px 12px' }}>
+                                <span style={{
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  padding: '2px 6px',
+                                  borderRadius: 4,
+                                  background: c.role === 'superadmin' ? 'rgba(255, 12, 52, 0.12)' : 'rgba(37, 99, 235, 0.12)',
+                                  color: c.role === 'superadmin' ? 'var(--accent, #FF0C34)' : '#2563EB',
+                                }}>
+                                  {c.role.toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', color: 'var(--accent, #FF0C34)', fontWeight: 700 }}>
+                                {c.password}
+                              </td>
+                              <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', color: '#16A34A', fontWeight: 700 }}>
+                                {c.accessCode || '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Table of Errors */}
+                {bulkResult.errors.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger)', marginBottom: 8 }}>
+                      Skipped / Failed Rows ({bulkResult.errors.length}):
+                    </div>
+                    <div style={{
+                      maxHeight: 160,
+                      overflowY: 'auto',
+                      border: '1px solid rgba(220, 38, 38, 0.25)',
+                      borderRadius: 8,
+                      background: 'rgba(220, 38, 38, 0.04)',
+                    }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: 'rgba(220, 38, 38, 0.08)', borderBottom: '1px solid rgba(220, 38, 38, 0.2)', color: 'var(--danger)', textAlign: 'left' }}>
+                            <th style={{ padding: '8px 12px' }}>Row</th>
+                            <th style={{ padding: '8px 12px' }}>Identifier</th>
+                            <th style={{ padding: '8px 12px' }}>Error Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkResult.errors.map((err, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(220, 38, 38, 0.1)' }}>
+                              <td style={{ padding: '8px 12px', fontWeight: 700 }}>Row #{err.row}</td>
+                              <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)' }}>{err.staffId || '—'}</td>
+                              <td style={{ padding: '8px 12px', color: 'var(--danger)' }}>{err.error}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                  <button
+                    onClick={() => {
+                      setBulkResult(null);
+                      setBulkCsvText('');
+                    }}
+                    style={{
+                      padding: '9px 18px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg)',
+                      color: 'var(--text)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Import Another Batch
+                  </button>
+                  <button
+                    onClick={() => setBulkModalOpen(false)}
+                    style={{
+                      padding: '9px 22px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'var(--accent, #FF0C34)',
+                      color: '#FFFFFF',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleBulkImportSubmit} style={{ padding: 24 }}>
+                {bulkError && (
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    background: 'rgba(220, 38, 38, 0.1)',
+                    border: '1px solid rgba(220, 38, 38, 0.25)',
+                    color: 'var(--danger)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    marginBottom: 16,
+                  }}>
+                    {bulkError}
+                  </div>
+                )}
+
+                {/* Import Tabs */}
+                <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+                  <button
+                    type="button"
+                    onClick={() => setBulkTab('paste')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: bulkTab === 'paste' ? 'var(--accent, #FF0C34)' : 'var(--bg)',
+                      color: bulkTab === 'paste' ? '#FFFFFF' : 'var(--text)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📝 Paste CSV Rows
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkTab('file')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: bulkTab === 'file' ? 'var(--accent, #FF0C34)' : 'var(--bg)',
+                      color: bulkTab === 'file' ? '#FFFFFF' : 'var(--text)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📁 Upload .CSV File
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkCsvText(sampleCsvTemplate);
+                      setBulkTab('paste');
+                      triggerToast('Sample CSV template loaded into editor!');
+                    }}
+                    style={{
+                      marginLeft: 'auto',
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent, #FF0C34)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    📋 Load Sample Format
+                  </button>
+                </div>
+
+                {/* File Upload Zone */}
+                {bulkTab === 'file' && (
+                  <div style={{
+                    border: '2px dashed var(--border)',
+                    borderRadius: 12,
+                    padding: '32px 20px',
+                    textAlign: 'center',
+                    background: 'var(--bg)',
+                    marginBottom: 16,
+                  }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" style={{ color: 'var(--accent, #FF0C34)', marginBottom: 8 }}>
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                      Select a .CSV or .TXT Spreadsheet File
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, marginBottom: 12 }}>
+                      Must contain columns: Staff ID, Name, Email, Department, Location, Role, Password, Supervisor
+                    </div>
+                    <input
+                      type="file"
+                      accept=".csv,.txt"
+                      onChange={handleBulkFileChange}
+                      style={{ fontSize: 12, color: 'var(--text)' }}
+                    />
+                  </div>
+                )}
+
+                {/* Textarea for CSV */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase' }}>
+                      CSV Data Content (Comma, Tab, or Semicolon Separated)
+                    </label>
+                    <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 600 }}>
+                      Parsed Rows: <strong>{parseAdminsFromCsv(bulkCsvText).length}</strong>
+                    </span>
+                  </div>
+                  <textarea
+                    rows={8}
+                    required
+                    value={bulkCsvText}
+                    onChange={(e) => setBulkCsvText(e.target.value)}
+                    placeholder={sampleCsvTemplate}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg)',
+                      color: 'var(--text)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre',
+                      overflowX: 'auto',
+                    }}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>
+                    Columns expected: <code>Staff ID, Full Name, Email, Department, Location, Role (superadmin/hr_admin), Password (optional), Supervisor Privilege (yes/no)</code>
+                  </div>
+                </div>
+
+                {/* Live Preview Table */}
+                {parseAdminsFromCsv(bulkCsvText).length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 6, textTransform: 'uppercase' }}>
+                      Live Parse Preview ({parseAdminsFromCsv(bulkCsvText).length} rows ready):
+                    </div>
+                    <div style={{
+                      maxHeight: 180,
+                      overflowY: 'auto',
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                    }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', color: 'var(--text-dim)', textAlign: 'left' }}>
+                            <th style={{ padding: '6px 10px' }}>#</th>
+                            <th style={{ padding: '6px 10px' }}>Staff ID</th>
+                            <th style={{ padding: '6px 10px' }}>Name</th>
+                            <th style={{ padding: '6px 10px' }}>Email</th>
+                            <th style={{ padding: '6px 10px' }}>Role</th>
+                            <th style={{ padding: '6px 10px' }}>Department</th>
+                            <th style={{ padding: '6px 10px' }}>Location</th>
+                            <th style={{ padding: '6px 10px' }}>Supervisor?</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {parseAdminsFromCsv(bulkCsvText).slice(0, 10).map((row, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                              <td style={{ padding: '6px 10px', color: 'var(--text-dim)' }}>{idx + 1}</td>
+                              <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{row.staffId}</td>
+                              <td style={{ padding: '6px 10px' }}>{row.name}</td>
+                              <td style={{ padding: '6px 10px' }}>{row.email}</td>
+                              <td style={{ padding: '6px 10px' }}>
+                                <span style={{
+                                  fontSize: 10,
+                                  fontWeight: 800,
+                                  padding: '1px 5px',
+                                  borderRadius: 4,
+                                  background: row.role === 'superadmin' ? 'rgba(255, 12, 52, 0.12)' : 'rgba(37, 99, 235, 0.12)',
+                                  color: row.role === 'superadmin' ? 'var(--accent, #FF0C34)' : '#2563EB',
+                                }}>
+                                  {row.role.toUpperCase()}
+                                </span>
+                              </td>
+                              <td style={{ padding: '6px 10px' }}>{row.department}</td>
+                              <td style={{ padding: '6px 10px' }}>{row.location}</td>
+                              <td style={{ padding: '6px 10px', color: row.isSupervisorAlso ? '#16A34A' : 'var(--text-dim)' }}>
+                                {row.isSupervisorAlso ? 'Yes (Key generated)' : 'No'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Form Buttons */}
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => setBulkModalOpen(false)}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg)',
+                      color: 'var(--text)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={bulkSubmitting || parseAdminsFromCsv(bulkCsvText).length === 0}
+                    style={{
+                      padding: '10px 22px',
+                      borderRadius: 8,
+                      border: 'none',
+                      background: 'var(--accent, #FF0C34)',
+                      color: '#FFFFFF',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: bulkSubmitting || parseAdminsFromCsv(bulkCsvText).length === 0 ? 'not-allowed' : 'pointer',
+                      opacity: bulkSubmitting || parseAdminsFromCsv(bulkCsvText).length === 0 ? 0.6 : 1,
+                      boxShadow: '0 4px 12px rgba(255, 12, 52, 0.25)',
+                    }}
+                  >
+                    {bulkSubmitting
+                      ? 'Importing Accounts...'
+                      : `Import ${parseAdminsFromCsv(bulkCsvText).length} Accounts`}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
