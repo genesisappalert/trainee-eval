@@ -559,8 +559,12 @@ export default function SupervisorAssessmentPage() {
                             type="text"
                             placeholder="Evidence / remarks for this rating..."
                             disabled={isReadOnly}
-                            value={answers[`${comp.id}_comment`] || ''}
-                            onChange={(e) => updateAnswer(`${comp.id}_comment`, e.target.value)}
+                            value={answers[`${comp.id}_comment`] || answers[`s_c${comp.id.replace('s_r', '')}`] || ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              updateAnswer(`${comp.id}_comment`, val);
+                              updateAnswer(`s_c${comp.id.replace('s_r', '')}`, val);
+                            }}
                             style={{
                               width: '100%',
                               padding: '8px 12px',

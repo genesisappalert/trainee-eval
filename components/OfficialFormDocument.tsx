@@ -56,6 +56,17 @@ export interface OfficialSupervisorDocProps {
   onSignatureClick?: () => void;
 }
 
+function isOverallMatch(val: string | undefined, optId: string): boolean {
+  if (!val) return false;
+  const v = val.toLowerCase().trim();
+  if (optId === 'exceptional') return v === 'exceptional' || v === 'excellent';
+  if (optId === 'exceeds_expectations') return v === 'exceeds_expectations' || v === 'exceeds expectation' || v === 'very_good' || v === 'very good';
+  if (optId === 'meets_expectations') return v === 'meets_expectations' || v === 'meets expectation' || v === 'good';
+  if (optId === 'needs_development') return v === 'needs_development' || v === 'fair';
+  if (optId === 'unsatisfactory') return v === 'unsatisfactory' || v === 'poor';
+  return v === optId;
+}
+
 export function OfficialSupervisorDocument({
   data,
   isInteractive = false,
@@ -115,9 +126,17 @@ export function OfficialSupervisorDocument({
     { id: 'unsatisfactory', label: 'Unsatisfactory' },
   ];
 
+  const supervisorRecommendationOptions = [
+    { id: 'confirm_promotion', label: 'Confirm Appointment / Fast-Track Promotion to Unit Lead' },
+    { id: 'retain_on_track', label: 'Continue Programme / On Track for Standard Confirmation' },
+    { id: 'extend_probation', label: 'Extend Probationary Period (requires 90-day PIP)' },
+    { id: 'reassign_unit', label: 'Reassign to Alternative Business Unit or Function' },
+    { id: 'discontinue', label: 'Discontinue from Management Trainee Programme' },
+  ];
+
   return (
     <div className="official-document-container">
-      {/* ── PAGE 1 OF 3 ───────────────────────────────────────── */}
+      {/* ── PAGE 1 OF 2 ───────────────────────────────────────── */}
       <div className="official-doc-page page-1">
         {/* Header Table */}
         <table className="doc-header-table">
@@ -135,7 +154,7 @@ export function OfficialSupervisorDocument({
                   <div>Date</div>
                   <div>({formattedDate})</div>
                 </div>
-                <div className="doc-meta-bottom">Page: 1 / 3</div>
+                <div className="doc-meta-bottom">Page: 1 / 2</div>
               </td>
             </tr>
           </tbody>
@@ -289,12 +308,17 @@ export function OfficialSupervisorDocument({
                     <textarea
                       className="doc-textarea"
                       rows={2}
-                      value={a[q.cid] || ''}
-                      onChange={(e) => update(q.cid, e.target.value)}
+                      value={a[q.cid] || a[`${q.id}_comment`] || ''}
+                      onChange={(e) => {
+                        update(q.cid, e.target.value);
+                        update(`${q.id}_comment`, e.target.value);
+                      }}
                       placeholder="Supervisor comments..."
                     />
                   ) : (
-                    <span style={{ fontSize: 11 }}>{a[q.cid] || '—'}</span>
+                    <span style={{ fontSize: 11, lineHeight: 1.35, display: 'block', wordBreak: 'break-word' }}>
+                      {a[q.cid] || a[`${q.id}_comment`] || '—'}
+                    </span>
                   )}
                 </td>
               </tr>
@@ -305,7 +329,7 @@ export function OfficialSupervisorDocument({
         <div className="doc-page-footer-num">1</div>
       </div>
 
-      {/* ── PAGE 2 OF 3 ───────────────────────────────────────── */}
+      {/* ── PAGE 2 OF 2 ───────────────────────────────────────── */}
       <div className="official-doc-page page-2">
         {/* Header Table */}
         <table className="doc-header-table">
@@ -323,14 +347,14 @@ export function OfficialSupervisorDocument({
                   <div>Date</div>
                   <div>({formattedDate})</div>
                 </div>
-                <div className="doc-meta-bottom">Page: 2 / 3</div>
+                <div className="doc-meta-bottom">Page: 2 / 2</div>
               </td>
             </tr>
           </tbody>
         </table>
 
         {/* Question 1: Key Strengths */}
-        <div className="doc-question-block" style={{ marginTop: 24 }}>
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">1. What are the trainee&apos;s three key strengths?</div>
           <div className="doc-lined-subrow">
             <span className="doc-bold" style={{ minWidth: 20 }}>a.</span>
@@ -343,7 +367,7 @@ export function OfficialSupervisorDocument({
                 placeholder="Strength 1..."
               />
             ) : (
-              <div className="doc-line-text">{a.s_q1a || ''}</div>
+              <div className="doc-line-text">{a.s_q1a || '—'}</div>
             )}
           </div>
           <div className="doc-lined-subrow">
@@ -357,7 +381,7 @@ export function OfficialSupervisorDocument({
                 placeholder="Strength 2..."
               />
             ) : (
-              <div className="doc-line-text">{a.s_q1b || ''}</div>
+              <div className="doc-line-text">{a.s_q1b || '—'}</div>
             )}
           </div>
           <div className="doc-lined-subrow">
@@ -371,41 +395,59 @@ export function OfficialSupervisorDocument({
                 placeholder="Strength 3..."
               />
             ) : (
-              <div className="doc-line-text">{a.s_q1c || ''}</div>
+              <div className="doc-line-text">{a.s_q1c || '—'}</div>
             )}
           </div>
         </div>
 
-        {/* Question 2: Learning & Development Resources */}
-        <div className="doc-question-block" style={{ marginTop: 28 }}>
+        {/* Question 2: Areas for Improvement */}
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">
-            2. What specific training, skill-building, or mentoring resources should the Learning & Development team provide over the next quarter to support this trainee?
+            2. Specific areas requiring improvement or behavioural development:
           </div>
           {isInteractive ? (
             <textarea
               className="doc-multi-line-textarea"
-              rows={3}
+              rows={2}
+              value={a.s_q_dev || ''}
+              onChange={(e) => update('s_q_dev', e.target.value)}
+              placeholder="Outline skills, mindset, or performance habits the trainee needs to enhance..."
+            />
+          ) : (
+            <div className="doc-line-text" style={{ minHeight: 28, height: 'auto', padding: '4px 6px', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>
+              {a.s_q_dev || '—'}
+            </div>
+          )}
+        </div>
+
+        {/* Question 3: Learning & Development Resources */}
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
+          <div className="doc-question-title">
+            3. What specific training, skill-building, or mentoring resources should the Learning & Development team provide over the next quarter to support this trainee?
+          </div>
+          {isInteractive ? (
+            <textarea
+              className="doc-multi-line-textarea"
+              rows={2}
               value={a.s_q2 || ''}
               onChange={(e) => update('s_q2', e.target.value)}
               placeholder="State training and development recommendations..."
             />
           ) : (
-            <div className="doc-three-lines">
-              <div className="doc-single-line">{a.s_q2 || ''}</div>
-              <div className="doc-single-line"></div>
-              <div className="doc-single-line"></div>
+            <div className="doc-line-text" style={{ minHeight: 28, height: 'auto', padding: '4px 6px', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>
+              {a.s_q2 || '—'}
             </div>
           )}
         </div>
 
-        {/* Question 3: Overall Performance Rating */}
-        <div className="doc-question-block" style={{ marginTop: 28 }}>
+        {/* Question 4: Overall Performance Rating */}
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">
-            3. Overall, how would you rate the performance of your trainee so far?
+            4. Overall, how would you rate the performance of your trainee so far?
           </div>
-          <div className="doc-checkbox-list">
+          <div className="doc-checkbox-list" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px 16px', marginTop: 6 }}>
             {overallOptions.map((opt) => {
-              const checked = a.s_overall === opt.id;
+              const checked = isOverallMatch(a.s_overall, opt.id);
               return (
                 <div
                   key={opt.id}
@@ -420,8 +462,30 @@ export function OfficialSupervisorDocument({
           </div>
         </div>
 
+        {/* Question 5: Recommendation on Trainee Status */}
+        <div className="doc-question-block" style={{ marginTop: 18 }}>
+          <div className="doc-question-title">
+            5. Recommendation on Trainee Status:
+          </div>
+          <div className="doc-checkbox-list" style={{ gap: 4, marginTop: 6 }}>
+            {supervisorRecommendationOptions.map((opt) => {
+              const checked = a.s_recommendation === opt.id;
+              return (
+                <div
+                  key={opt.id}
+                  className={`doc-checkbox-row ${isInteractive ? 'clickable' : ''}`}
+                  onClick={() => isInteractive && update('s_recommendation', opt.id)}
+                >
+                  <span className="doc-checkbox-box">{checked ? '☑' : '☐'}</span>
+                  <span className="doc-checkbox-label" style={{ fontSize: 11.5 }}>{opt.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Supervisor Signature Row */}
-        <div className="doc-signature-block">
+        <div className="doc-signature-block" style={{ marginTop: 22 }}>
           <div className="doc-signature-left">
             <span className="doc-bold">Supervisor Signature:</span>
             <div
@@ -438,6 +502,11 @@ export function OfficialSupervisorDocument({
                 isInteractive && <span className="doc-sig-placeholder">Click to draw signature</span>
               )}
             </div>
+            {a.s_signature_name && (
+              <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>
+                Signatory: <strong>{a.s_signature_name}</strong>
+              </div>
+            )}
           </div>
           <div className="doc-signature-right">
             <span className="doc-bold">Date:</span>
@@ -446,6 +515,8 @@ export function OfficialSupervisorDocument({
             </div>
           </div>
         </div>
+
+        <div className="doc-page-footer-num">2</div>
       </div>
     </div>
   );
@@ -539,7 +610,7 @@ export function OfficialTraineeDocument({
                   <div>Date</div>
                   <div>({formattedDate})</div>
                 </div>
-                <div className="doc-meta-bottom">Page: 1 / 3</div>
+                <div className="doc-meta-bottom">Page: 1 / 2</div>
               </td>
             </tr>
           </tbody>
@@ -680,12 +751,17 @@ export function OfficialTraineeDocument({
                     <textarea
                       className="doc-textarea"
                       rows={2}
-                      value={a[q.cid] || ''}
-                      onChange={(e) => update(q.cid, e.target.value)}
+                      value={a[q.cid] || a[`${q.id}_comment`] || ''}
+                      onChange={(e) => {
+                        update(q.cid, e.target.value);
+                        update(`${q.id}_comment`, e.target.value);
+                      }}
                       placeholder="Comment & observation..."
                     />
                   ) : (
-                    <span style={{ fontSize: 11 }}>{a[q.cid] || '—'}</span>
+                    <span style={{ fontSize: 11, lineHeight: 1.35, display: 'block', wordBreak: 'break-word' }}>
+                      {a[q.cid] || a[`${q.id}_comment`] || '—'}
+                    </span>
                   )}
                 </td>
               </tr>
@@ -718,7 +794,7 @@ export function OfficialTraineeDocument({
                   <div>Date</div>
                   <div>({formattedDate})</div>
                 </div>
-                <div className="doc-meta-bottom">Page: 2 / 3</div>
+                <div className="doc-meta-bottom">Page: 2 / 2</div>
               </td>
             </tr>
           </tbody>
@@ -771,7 +847,7 @@ export function OfficialTraineeDocument({
         </div>
 
         {/* Question 2: Workflow changes */}
-        <div className="doc-question-block" style={{ marginTop: 24 }}>
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">
             2. Have you identified or implemented any workflow changes, cost-saving initiatives, or operational improvements since joining your department?
           </div>
@@ -784,15 +860,14 @@ export function OfficialTraineeDocument({
               placeholder="Describe workflow improvements..."
             />
           ) : (
-            <div className="doc-two-lines">
-              <div className="doc-single-line">{a.t_q2 || ''}</div>
-              <div className="doc-single-line"></div>
+            <div className="doc-line-text" style={{ minHeight: 28, height: 'auto', padding: '4px 6px', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>
+              {a.t_q2 || '—'}
             </div>
           )}
         </div>
 
         {/* Question 3: Learning experience */}
-        <div className="doc-question-block" style={{ marginTop: 24 }}>
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">
             3. What can your supervisor or business unit do differently to improve your learning experience?
           </div>
@@ -805,15 +880,14 @@ export function OfficialTraineeDocument({
               placeholder="Your feedback..."
             />
           ) : (
-            <div className="doc-two-lines">
-              <div className="doc-single-line">{a.t_q3 || ''}</div>
-              <div className="doc-single-line"></div>
+            <div className="doc-line-text" style={{ minHeight: 28, height: 'auto', padding: '4px 6px', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>
+              {a.t_q3 || '—'}
             </div>
           )}
         </div>
 
         {/* Question 4: Additional resources */}
-        <div className="doc-question-block" style={{ marginTop: 24 }}>
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">
             4. What additional resources, cross-functional exposure, or leadership opportunities would help accelerate your readiness for managerial roles in the next 6–12 months?
           </div>
@@ -826,21 +900,20 @@ export function OfficialTraineeDocument({
               placeholder="Leadership and resources needed..."
             />
           ) : (
-            <div className="doc-two-lines">
-              <div className="doc-single-line">{a.t_q4 || ''}</div>
-              <div className="doc-single-line"></div>
+            <div className="doc-line-text" style={{ minHeight: 28, height: 'auto', padding: '4px 6px', whiteSpace: 'pre-wrap', lineHeight: 1.45 }}>
+              {a.t_q4 || '—'}
             </div>
           )}
         </div>
 
         {/* Question 5: Overall rating */}
-        <div className="doc-question-block" style={{ marginTop: 24 }}>
+        <div className="doc-question-block" style={{ marginTop: 20 }}>
           <div className="doc-question-title">
             5. Overall, how would you rate your MTP experience so far?
           </div>
-          <div className="doc-checkbox-list">
+          <div className="doc-checkbox-list" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '8px 16px', marginTop: 6 }}>
             {overallOptions.map((opt) => {
-              const checked = a.t_overall === opt.id;
+              const checked = isOverallMatch(a.t_overall, opt.id);
               return (
                 <div
                   key={opt.id}
