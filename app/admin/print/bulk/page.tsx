@@ -212,12 +212,12 @@ function BulkPrintContent() {
     const supervisorDocData = {
       supervisorName: supervisorAnswers?.s_signature_name || supervisor?.name || '—',
       traineeName: appraisal.traineeName,
-      staffId: supervisorAnswers?.s_staff_id || supervisor?.staffId || '—',
+      staffId: supervisorAnswers?.s_staff_id || appraisal.traineeStaffId || supervisor?.staffId || '—',
       appraisalDate: appraisal.supervisorSubmittedAt || supervisorAnswers?.s_signature_date,
       department: supervisorAnswers?.s_department || appraisal.department,
       location: supervisorAnswers?.s_location || appraisal.location,
       answers: supervisorAnswers || {},
-      signatureDataUrl: supervisorSignatureSvg || supervisorAnswers?.s_signature,
+      signatureDataUrl: supervisorSignatureSvg || supervisorAnswers?.s_signature_svg || supervisorAnswers?.s_signature,
     };
 
     return (

@@ -59,12 +59,18 @@ export interface OfficialSupervisorDocProps {
 function isOverallMatch(val: string | undefined, optId: string): boolean {
   if (!val) return false;
   const v = val.toLowerCase().trim();
-  if (optId === 'exceptional') return v === 'exceptional' || v === 'excellent';
-  if (optId === 'exceeds_expectations') return v === 'exceeds_expectations' || v === 'exceeds expectation' || v === 'very_good' || v === 'very good';
-  if (optId === 'meets_expectations') return v === 'meets_expectations' || v === 'meets expectation' || v === 'good';
-  if (optId === 'needs_development') return v === 'needs_development' || v === 'fair';
-  if (optId === 'unsatisfactory') return v === 'unsatisfactory' || v === 'poor';
+  if (optId === 'exceptional' || optId === 'excellent') return v === 'exceptional' || v === 'excellent';
+  if (optId === 'exceeds_expectations' || optId === 'very_good') return v === 'exceeds_expectations' || v === 'exceeds expectation' || v === 'very_good' || v === 'very good';
+  if (optId === 'meets_expectations' || optId === 'good') return v === 'meets_expectations' || v === 'meets expectation' || v === 'good';
+  if (optId === 'needs_development' || optId === 'fair') return v === 'needs_development' || v === 'fair' || v === 'satisfactory';
+  if (optId === 'unsatisfactory' || optId === 'poor') return v === 'unsatisfactory' || v === 'poor' || v === 'needs improvement';
   return v === optId;
+}
+
+function getRatingComment(answers: Record<string, any>, cid: string, qid: string): string {
+  const val = answers[cid] ?? answers[`${qid}_comment`];
+  if (val === undefined || val === null) return '';
+  return String(val);
 }
 
 export function OfficialSupervisorDocument({
@@ -308,16 +314,15 @@ export function OfficialSupervisorDocument({
                     <textarea
                       className="doc-textarea"
                       rows={2}
-                      value={a[q.cid] || a[`${q.id}_comment`] || ''}
+                      value={getRatingComment(a, q.cid, q.id)}
                       onChange={(e) => {
                         update(q.cid, e.target.value);
-                        update(`${q.id}_comment`, e.target.value);
                       }}
                       placeholder="Supervisor comments..."
                     />
                   ) : (
-                    <span style={{ fontSize: 11, lineHeight: 1.35, display: 'block', wordBreak: 'break-word' }}>
-                      {a[q.cid] || a[`${q.id}_comment`] || '—'}
+                    <span style={{ fontSize: 11, lineHeight: 1.35, display: 'block', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                      {getRatingComment(a, q.cid, q.id).trim() || '—'}
                     </span>
                   )}
                 </td>
@@ -711,7 +716,7 @@ export function OfficialTraineeDocument({
             <tr><td className="doc-bold">4 – Agree</td></tr>
             <tr><td className="doc-bg-gray doc-bold">3 – Neutral</td></tr>
             <tr><td className="doc-bold">2 – Disagree</td></tr>
-            <tr><td className="doc-bg-gray doc-bold">1 – Strongly Agree</td></tr>
+            <tr><td className="doc-bg-gray doc-bold">1 – Strongly Disagree</td></tr>
           </tbody>
         </table>
 
@@ -751,16 +756,15 @@ export function OfficialTraineeDocument({
                     <textarea
                       className="doc-textarea"
                       rows={2}
-                      value={a[q.cid] || a[`${q.id}_comment`] || ''}
+                      value={getRatingComment(a, q.cid, q.id)}
                       onChange={(e) => {
                         update(q.cid, e.target.value);
-                        update(`${q.id}_comment`, e.target.value);
                       }}
                       placeholder="Comment & observation..."
                     />
                   ) : (
-                    <span style={{ fontSize: 11, lineHeight: 1.35, display: 'block', wordBreak: 'break-word' }}>
-                      {a[q.cid] || a[`${q.id}_comment`] || '—'}
+                    <span style={{ fontSize: 11, lineHeight: 1.35, display: 'block', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                      {getRatingComment(a, q.cid, q.id).trim() || '—'}
                     </span>
                   )}
                 </td>

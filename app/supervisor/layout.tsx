@@ -103,7 +103,7 @@ function SupervisorNavbar() {
 export default function SupervisorLayout({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#0f172a' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg-secondary)', color: 'var(--text)' }}>
         <SupervisorNavbar />
         <main>{children}</main>
       </div>

@@ -214,11 +214,16 @@ export default function TraineeFormPage() {
     fetchCycle();
   }, [slug]);
 
-  /* ── Check for resume token in URL hash ──────────────── */
+  /* ── Check for resume token in URL hash or query param ── */
   useEffect(() => {
-    const urlToken = window.location.hash.replace('#', '');
+    const hashToken = window.location.hash.replace('#', '').trim();
+    const queryToken = new URLSearchParams(window.location.search).get('token')?.trim() || '';
+    const urlToken = hashToken || queryToken;
     if (urlToken) {
       setToken(urlToken);
+      if (!hashToken && queryToken) {
+        window.history.replaceState(null, '', `${window.location.pathname}#${urlToken}`);
+      }
       // Load existing draft
       loadDraft(urlToken);
     }
@@ -245,8 +250,8 @@ export default function TraineeFormPage() {
   };
 
   /* ── Autosave ──────────────────────────────────────────── */
-  const saveAnswers = useCallback(async () => {
-    if (!cycle || Object.keys(answers).length === 0) return;
+  const saveAnswers = useCallback(async (): Promise<string | null> => {
+    if (!cycle || Object.keys(answers).length === 0) return token;
 
     setSaving(true);
     try {
@@ -260,27 +265,30 @@ export default function TraineeFormPage() {
         }),
       });
       const data = await res.json();
+      const activeToken = data.token || token;
       if (data.token && !token) {
         setToken(data.token);
         // Update URL with token for resume
         window.history.replaceState(null, '', `#${data.token}`);
       }
       setLastSaved(new Date());
+      return activeToken;
     } catch (e) {
       console.error('Autosave failed:', e);
+      return token;
     } finally {
       setSaving(false);
     }
   }, [answers, cycle, slug, token, currentStep]);
 
-  // Autosave on answer change (debounced 10s per T-10)
+  // Autosave on answer change (debounced 3s)
   useEffect(() => {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(() => {
       if (Object.keys(answers).length > 0 && !submitted) {
         saveAnswers();
       }
-    }, 10000);
+    }, 3000);
     return () => {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     };
@@ -288,7 +296,19 @@ export default function TraineeFormPage() {
 
   /* ── Field change handler ──────────────────────────────── */
   const handleChange = (fieldId: string, value: string) => {
-    setAnswers((prev) => ({ ...prev, [fieldId]: value }));
+    setAnswers((prev) => {
+      const next: Record<string, string> = { ...prev, [fieldId]: value };
+      // Synchronize t_c1..t_c5 and t_r1_comment..t_r5_comment atomically
+      const cMatch = fieldId.match(/^t_c([1-5])$/);
+      if (cMatch) {
+        next[`t_r${cMatch[1]}_comment`] = value;
+      }
+      const rCommentMatch = fieldId.match(/^t_r([1-5])_comment$/);
+      if (rCommentMatch) {
+        next[`t_c${rCommentMatch[1]}`] = value;
+      }
+      return next;
+    });
     // Clear validation error
     if (validationErrors[fieldId]) {
       setValidationErrors((prev) => {
@@ -351,7 +371,7 @@ export default function TraineeFormPage() {
   };
 
   const goToStep = (index: number) => {
-    if (index < currentStep) {
+    if (index < currentStep || formMode === 'paper') {
       setCurrentStep(index);
       window.scrollTo(0, 0);
     }
@@ -359,21 +379,35 @@ export default function TraineeFormPage() {
 
   /* ── Submit ────────────────────────────────────────────── */
   const handleSubmit = async () => {
+    // Validate all required steps before final submission
+    for (let sIdx = 0; sIdx < steps.length - 2; sIdx++) {
+      if (!validateStep(sIdx)) {
+        setFormMode('steps');
+        setCurrentStep(sIdx);
+        window.scrollTo(0, 0);
+        return;
+      }
+    }
+
     if (!signatureData) {
-      setValidationErrors({ t_signature: 'Please draw your signature' });
+      setValidationErrors({ t_signature: 'Please draw your signature before submitting' });
+      setFormMode('steps');
+      setCurrentStep(steps.length - 1);
+      window.scrollTo(0, 0);
       return;
     }
 
     setSubmitting(true);
     try {
-      // Save final answers first
-      await saveAnswers();
+      // Save final answers first and capture active token
+      const activeToken = await saveAnswers();
 
       const res = await fetch('/api/trainee/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token,
+          token: activeToken || token,
+          answers,
           signatureDataUrl: signatureData,
         }),
       });

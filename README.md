@@ -126,10 +126,10 @@ After running the database seed script:
 
 | Role | Login URL | Identifier | Password / Code |
 | :--- | :--- | :--- | :--- |
-| **HR Super Admin** | `/login` (HR Admin Tab) | `GEN-ADMIN-001` | `GenesisAdmin2026!` |
+| **HR Super Admin** | `/login` (HR Admin Tab) | `GEN-HR-001` | `Password123!` *(or Access Code `ADMIN-001`)* |
 | **Supervisor 1** | `/login` (Supervisor Code Tab) | `SUP-1010` | *(Access Code)* |
 | **Supervisor 2** | `/login` (Supervisor Code Tab) | `SUP-2020` | *(Access Code)* |
-| **Trainee Portal** | `/a/mtp-2026-q1` | — | *(Direct Link / No Login)* |
+| **Trainee Portal** | `/a/2026-mid-year` | — | *(Direct Link / No Login)* |
 
 ---
 

@@ -22,6 +22,27 @@ interface AppraisalData {
   supervisorDeadline: string;
 }
 
+function isSupervisorOverallSelected(currentVal: string | undefined, optionVal: string): boolean {
+  if (!currentVal) return false;
+  const v = currentVal.toLowerCase().trim();
+  if (optionVal === 'exceptional' || optionVal === 'excellent') {
+    return v === 'exceptional' || v === 'excellent';
+  }
+  if (optionVal === 'exceeds_expectations' || optionVal === 'very_good') {
+    return v === 'exceeds_expectations' || v === 'exceeds expectation' || v === 'very_good' || v === 'very good';
+  }
+  if (optionVal === 'meets_expectations' || optionVal === 'good') {
+    return v === 'meets_expectations' || v === 'meets expectation' || v === 'good';
+  }
+  if (optionVal === 'needs_development' || optionVal === 'fair') {
+    return v === 'needs_development' || v === 'fair' || v === 'satisfactory';
+  }
+  if (optionVal === 'unsatisfactory' || optionVal === 'poor') {
+    return v === 'unsatisfactory' || v === 'poor' || v === 'needs improvement';
+  }
+  return v === optionVal;
+}
+
 export default function SupervisorAssessmentPage() {
   const params = useParams();
   const router = useRouter();
@@ -36,13 +57,19 @@ export default function SupervisorAssessmentPage() {
   const [savingStatus, setSavingStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'split' | 'trainee' | 'supervisor'>('split');
+  const [showTraineePanel, setShowTraineePanel] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [layoutMode, setLayoutMode] = useState<'workspace' | 'paper'>('workspace');
 
-  // Signature canvas
+  // Signature canvas & debounced autosave refs
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sigPadRef = useRef<SignaturePad | null>(null);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestAnswersRef = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    latestAnswersRef.current = answers;
+  }, [answers]);
 
   // Set default supervisor name from session once loaded if not already set
   useEffect(() => {
@@ -50,17 +77,19 @@ export default function SupervisorAssessmentPage() {
     if (userName) {
       setAnswers((prev) => {
         if (!prev.s_signature_name) {
-          return {
+          const next = {
             ...prev,
             s_signature_name: userName,
           };
+          latestAnswersRef.current = next;
+          return next;
         }
         return prev;
       });
     }
   }, [session?.user?.name]);
 
-  // Load appraisal data
+  // Load appraisal data once per appraisalId
   useEffect(() => {
     async function loadData() {
       try {
@@ -73,16 +102,25 @@ export default function SupervisorAssessmentPage() {
         setAppraisal(json.appraisal);
         setTraineeAnswers(json.traineeAnswers || {});
 
-        const initialAnswers = json.supervisorAnswers || {};
+        const initialAnswers: Record<string, any> = { ...(json.supervisorAnswers || {}) };
+        for (let i = 1; i <= 7; i++) {
+          const cVal = initialAnswers[`s_c${i}`] ?? initialAnswers[`s_r${i}_comment`];
+          if (cVal !== undefined) {
+            initialAnswers[`s_c${i}`] = cVal;
+            initialAnswers[`s_r${i}_comment`] = cVal;
+          }
+        }
         const defaultName = initialAnswers.s_signature_name || json.currentUserName || session?.user?.name || '';
         const defaultDate = initialAnswers.s_signature_date || new Date().toISOString().split('T')[0];
 
-        setAnswers((prev) => ({
+        const merged = {
           ...initialAnswers,
-          ...prev,
-          s_signature_name: initialAnswers.s_signature_name || prev.s_signature_name || defaultName,
-          s_signature_date: initialAnswers.s_signature_date || prev.s_signature_date || defaultDate,
-        }));
+          s_signature_name: initialAnswers.s_signature_name || defaultName,
+          s_signature_date: initialAnswers.s_signature_date || defaultDate,
+          s_signature_svg: initialAnswers.s_signature_svg || json.supervisorSignatureSvg || null,
+        };
+        latestAnswersRef.current = merged;
+        setAnswers(merged);
       } catch (err: any) {
         setError(err.message || 'Error loading appraisal');
       } finally {
@@ -92,32 +130,13 @@ export default function SupervisorAssessmentPage() {
     if (appraisalId) {
       loadData();
     }
-  }, [appraisalId, session?.user?.name]);
-
-  // Initialize signature pad
-  useEffect(() => {
-    if (canvasRef.current && !sigPadRef.current) {
-      const pad = new SignaturePad(canvasRef.current, {
-        penColor: '#002147',
-        backgroundColor: 'rgba(255,255,255,0)',
-      });
-      sigPadRef.current = pad;
-
-      if (answers.s_signature_svg && canvasRef.current) {
-        // Load existing signature data url if present
-        try {
-          pad.fromDataURL(answers.s_signature_svg);
-        } catch (e) {
-          // ignore invalid data url
-        }
-      }
-    }
-  }, [currentStep, answers.s_signature_svg]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appraisalId]);
 
   // Autosave handler
   const saveDraft = useCallback(
     async (updatedAnswers: Record<string, any>) => {
-      if (appraisal?.status === 'complete') return;
+      if (appraisal?.status === 'complete' || appraisal?.status === 'printed') return;
       try {
         setSavingStatus('saving');
         const res = await fetch(`/api/supervisor/assess/${appraisalId}`, {
@@ -131,46 +150,125 @@ export default function SupervisorAssessmentPage() {
         } else {
           setSavingStatus('error');
         }
-      } catch (err) {
+      } catch {
         setSavingStatus('error');
       }
     },
     [appraisalId, appraisal?.status]
   );
 
-  const updateAnswer = (key: string, value: any) => {
-    setAnswers((prev) => {
-      const updated = { ...prev, [key]: value };
-      saveDraft(updated);
-      return updated;
+  const scheduleAutosave = useCallback(
+    (updatedAnswers: Record<string, any>) => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+      autosaveTimerRef.current = setTimeout(() => {
+        saveDraft(updatedAnswers);
+      }, 600);
+    },
+    [saveDraft]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  const updateAnswer = useCallback(
+    (key: string, value: any) => {
+      setAnswers((prev) => {
+        const updated: Record<string, any> = { ...prev, [key]: value };
+        // Keep s_c1..s_c7 and s_r1_comment..s_r7_comment synchronized in a single update
+        const cMatch = key.match(/^s_c([1-7])$/);
+        if (cMatch) {
+          updated[`s_r${cMatch[1]}_comment`] = value;
+        }
+        const rCommentMatch = key.match(/^s_r([1-7])_comment$/);
+        if (rCommentMatch) {
+          updated[`s_c${rCommentMatch[1]}`] = value;
+        }
+        latestAnswersRef.current = updated;
+        scheduleAutosave(updated);
+        return updated;
+      });
+    },
+    [scheduleAutosave]
+  );
+
+  // Initialize signature pad whenever Step 5 canvas mounts
+  useEffect(() => {
+    if (currentStep !== 5 || layoutMode !== 'workspace' || !canvasRef.current) {
+      sigPadRef.current = null;
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    const pad = new SignaturePad(canvas, {
+      penColor: '#002147',
+      backgroundColor: 'rgba(255,255,255,0)',
     });
-  };
+    sigPadRef.current = pad;
+
+    const existingSig = latestAnswersRef.current.s_signature_svg;
+    if (existingSig) {
+      try {
+        pad.fromDataURL(existingSig);
+      } catch {
+        // ignore invalid data url
+      }
+    }
+
+    const handleEndStroke = () => {
+      if (!pad.isEmpty()) {
+        updateAnswer('s_signature_svg', pad.toDataURL());
+      }
+    };
+    pad.addEventListener('endStroke', handleEndStroke);
+
+    return () => {
+      pad.removeEventListener('endStroke', handleEndStroke);
+      pad.off();
+      sigPadRef.current = null;
+    };
+  }, [currentStep, layoutMode, updateAnswer]);
 
   const handleClearSignature = () => {
     if (sigPadRef.current) {
       sigPadRef.current.clear();
-      updateAnswer('s_signature_svg', null);
     }
-  };
-
-  const handleSaveSignature = () => {
-    if (sigPadRef.current && !sigPadRef.current.isEmpty()) {
-      const dataUrl = sigPadRef.current.toDataURL();
-      updateAnswer('s_signature_svg', dataUrl);
-    }
+    updateAnswer('s_signature_svg', null);
   };
 
   const handleSubmit = async () => {
-    // Capture signature if not already saved
-    let sigUrl = answers.s_signature_svg;
+    // Cancel any pending debounced autosave so it never races with final submission
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+
+    const currentAnswers = { ...latestAnswersRef.current };
+
+    // Capture signature if drawn on canvas
+    let sigUrl = currentAnswers.s_signature_svg;
     if (sigPadRef.current && !sigPadRef.current.isEmpty()) {
       sigUrl = sigPadRef.current.toDataURL();
     }
 
+    // Ensure all comment keys are synced in final payload
     const payload: Record<string, any> = {
-      ...answers,
+      ...currentAnswers,
       s_signature_svg: sigUrl,
     };
+    for (let i = 1; i <= 7; i++) {
+      const cVal = payload[`s_c${i}`] ?? payload[`s_r${i}_comment`];
+      if (cVal !== undefined) {
+        payload[`s_c${i}`] = cVal;
+        payload[`s_r${i}_comment`] = cVal;
+      }
+    }
 
     // Validation
     const requiredRatings = ['s_r1', 's_r2', 's_r3', 's_r4', 's_r5', 's_r6', 's_r7'];
@@ -229,8 +327,8 @@ export default function SupervisorAssessmentPage() {
   if (loading) {
     return (
       <div style={{ padding: 60, textAlign: 'center' }}>
-        <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#002147', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-        <p style={{ marginTop: 16, color: '#64748b', fontSize: 14 }}>Loading assessment workspace...</p>
+        <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <p style={{ marginTop: 16, color: 'var(--text-dim)', fontSize: 14 }}>Loading assessment workspace...</p>
         <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -239,11 +337,12 @@ export default function SupervisorAssessmentPage() {
   if (error || !appraisal) {
     return (
       <div style={{ maxWidth: 800, margin: '60px auto', padding: 24, textAlign: 'center' }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Error loading assessment</h2>
-        <p style={{ color: '#64748b', marginTop: 8 }}>{error || 'Assessment record not found'}</p>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>Error loading assessment</h2>
+        <p style={{ color: 'var(--text-dim)', marginTop: 8 }}>{error || 'Assessment record not found'}</p>
         <Link
           href="/supervisor"
-          style={{ display: 'inline-block', marginTop: 20, padding: '10px 20px', background: '#002147', color: '#fff', borderRadius: 8, textDecoration: 'none', fontWeight: 600 }}
+          className="gh-btn gh-btn-primary"
+          style={{ display: 'inline-block', marginTop: 20, textDecoration: 'none' }}
         >
           Return to Queue
         </Link>
@@ -254,13 +353,55 @@ export default function SupervisorAssessmentPage() {
   const isReadOnly = appraisal.status === 'complete' || appraisal.status === 'printed';
 
   const ratingCompetencies = [
-    { id: 's_r1', title: '1. Job Knowledge & Technical Competence', desc: 'Understanding of duties, systems, standard operating procedures, and job mastery.' },
-    { id: 's_r2', title: '2. Quality & Accuracy of Work', desc: 'Thoroughness, precision, attention to detail, adherence to standards, and error-free execution.' },
-    { id: 's_r3', title: '3. Work Output & Productivity', desc: 'Pace of delivery, volume of work accomplished, time management, and output volume.' },
-    { id: 's_r4', title: '4. Dependability & Attendance', desc: 'Punctuality, reliability in fulfilling commitments, attendance, and adherence to company ethics.' },
-    { id: 's_r5', title: '5. Initiative & Problem Solving', desc: 'Proactive attitude, resourcefulness, self-starting ability, and creative approach to challenges.' },
-    { id: 's_r6', title: '6. Interpersonal Relations & Teamwork', desc: 'Collaboration with peers, cross-functional spirit, respect for colleagues, and constructive attitude.' },
-    { id: 's_r7', title: '7. Communication Skills', desc: 'Clarity in verbal and written reports, listening skills, and professional conduct with stakeholders.' },
+    {
+      id: 's_r1',
+      cid: 's_c1',
+      title: '1. KPIs, Operational Goals & Deadlines',
+      desc: 'To what extent does the trainee independently meet key performance indicators (KPIs), operational goals, and deadlines without requiring constant supervision?',
+    },
+    {
+      id: 's_r2',
+      cid: 's_c2',
+      title: '2. Functional Knowledge, Technical Skill & Accuracy',
+      desc: 'To what extent does the trainee demonstrate required functional knowledge, technical skill, and accuracy in daily operations?',
+    },
+    {
+      id: 's_r3',
+      cid: 's_c3',
+      title: '3. Proactiveness & Operational Problem Solving',
+      desc: 'To what extent does the trainee handle ambiguous situations proactively and resolve operational challenges without waiting for explicit instruction?',
+    },
+    {
+      id: 's_r4',
+      cid: 's_c4',
+      title: '4. Workflow Improvement & Efficiency Initiatives',
+      desc: 'To what extent does the trainee identify operational inefficiencies and suggest or implement workflow improvements within the department?',
+    },
+    {
+      id: 's_r5',
+      cid: 's_c5',
+      title: '5. Collaboration & Working Relationships',
+      desc: 'To what extent does the trainee collaborate effectively with peers, cross-functional units, and subordinates while building productive working relationships?',
+    },
+    {
+      id: 's_r6',
+      cid: 's_c6',
+      title: '6. Coachability, Agility & Applying Feedback',
+      desc: 'To what extent does the trainee accept constructive criticism, demonstrate agility, and successfully apply coaching to modify performance or behaviour?',
+    },
+    {
+      id: 's_r7',
+      cid: 's_c7',
+      title: '7. Ownership, Accountability & Leadership Potential',
+      desc: 'To what extent does the trainee exhibit ownership, accountability, and the leadership potential needed to step into higher-level supervisory or management responsibilities over the next 6–12 months?',
+    },
+  ];
+
+  const traineeQuestionsList = [
+    { id: 't_r1', cid: 't_c1', label: '1. Smooth onboarding & sufficient role support' },
+    { id: 't_r2', cid: 't_c2', label: '2. Clear understanding of daily KPIs & deliverables' },
+    { id: 't_r3', cid: 't_c3', label: '3. Classroom/induction modules prepared me for duties' },
+    { id: 't_r5', cid: 't_c5', label: '4. Confidence handling routine operational challenges independently' },
   ];
 
   return (
@@ -295,7 +436,7 @@ export default function SupervisorAssessmentPage() {
           </Link>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
                 {appraisal.traineeName}
               </span>
@@ -309,8 +450,23 @@ export default function SupervisorAssessmentPage() {
           </div>
         </div>
 
-        {/* Status, Layout Mode & Autosave Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* Status, Trainee Self-Assessment Toggle, Layout Mode & Autosave Indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setShowTraineePanel((prev) => !prev)}
+            className="gh-btn gh-btn-ghost"
+            style={{
+              padding: '6px 12px',
+              fontSize: 12,
+              background: showTraineePanel ? 'var(--accent-dim)' : undefined,
+              color: showTraineePanel ? 'var(--accent)' : undefined,
+              borderColor: showTraineePanel ? 'var(--accent-border)' : undefined,
+            }}
+          >
+            {showTraineePanel ? 'Hide Trainee Self-Assessment' : '📋 View Trainee Self-Assessment'}
+          </button>
+
           {/* Mode Switcher */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg-3)', border: '1px solid var(--border)', padding: 3, borderRadius: 10 }}>
             <button
@@ -376,20 +532,23 @@ export default function SupervisorAssessmentPage() {
         </div>
       </div>
 
-      {/* Render Official Paper Layout OR Split Workspace */}
+      {/* Render Official Paper Layout OR Workspace */}
       {layoutMode === 'paper' ? (
         <div style={{ flex: 1, padding: '32px 16px', background: '#525659', overflowY: 'auto' }}>
-          <div style={{
-            maxWidth: 820,
-            margin: '0 auto 16px auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: '#fff',
-            padding: '12px 20px',
-            borderRadius: 8,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-          }}>
+          <div
+            className="no-print"
+            style={{
+              maxWidth: 820,
+              margin: '0 auto 16px auto',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: '#fff',
+              padding: '12px 20px',
+              borderRadius: 8,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+            }}
+          >
             <span style={{ fontSize: 13, fontWeight: 700, color: '#002147' }}>
               Official Paper Template (Pixel-Perfect) — Live editing & preview
             </span>
@@ -434,540 +593,624 @@ export default function SupervisorAssessmentPage() {
           />
         </div>
       ) : (
-        /* Supervisor Assessment Form */
+        /* Supervisor Assessment Workspace */
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          maxHeight: 'calc(100vh - 130px)',
           padding: '32px 24px',
-          background: '#f8fafc',
+          background: 'var(--bg-secondary)',
         }}>
-          <div style={{ maxWidth: 880, margin: '0 auto' }}>
-            {/* Step Indicator */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 28,
-              background: '#fff',
-              padding: '12px 20px',
-              borderRadius: 12,
-              border: '1px solid #e2e8f0',
-            }}>
-              {[
-                { num: 1, title: 'Ratings' },
-                { num: 2, title: 'Strengths' },
-                { num: 3, title: 'Improvements' },
-                { num: 4, title: 'Overall & Rec.' },
-                { num: 5, title: 'Signature' },
-              ].map((step) => (
-                <button
-                  key={step.num}
-                  onClick={() => setCurrentStep(step.num)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '6px 12px',
-                    borderRadius: 8,
-                    backgroundColor: currentStep === step.num ? '#f1f5f9' : 'transparent',
-                  }}
-                >
-                  <div style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: currentStep === step.num ? '#002147' : currentStep > step.num ? '#16a34a' : '#cbd5e1',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}>
-                    {currentStep > step.num ? '✓' : step.num}
+          <div style={{
+            maxWidth: showTraineePanel ? 1360 : 880,
+            margin: '0 auto',
+            display: 'grid',
+            gridTemplateColumns: showTraineePanel ? 'minmax(340px, 460px) 1fr' : '1fr',
+            gap: 24,
+            alignItems: 'start',
+          }}>
+            {/* Collapsible Trainee Self-Assessment Side Panel */}
+            {showTraineePanel && (
+              <div style={{
+                background: 'var(--bg-card)',
+                borderRadius: 16,
+                border: '1px solid var(--border)',
+                padding: 24,
+                boxShadow: 'var(--shadow)',
+                position: 'sticky',
+                top: 140,
+                maxHeight: 'calc(100vh - 170px)',
+                overflowY: 'auto',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      Trainee Submission
+                    </div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '2px 0 0 0' }}>
+                      {appraisal.traineeName}&apos;s Self-Assessment
+                    </h3>
                   </div>
-                  <span style={{
-                    fontSize: 13,
-                    fontWeight: currentStep === step.num ? 700 : 500,
-                    color: currentStep === step.num ? '#002147' : '#64748b',
-                  }}>
-                    {step.title}
-                  </span>
-                </button>
-              ))}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowTraineePanel(false)}
+                    className="gh-btn gh-btn-ghost"
+                    style={{ padding: '4px 8px', fontSize: 12 }}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-            {/* Form Content Steps */}
-            <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: 32, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-              {/* STEP 1: Core Performance Ratings */}
-              {currentStep === 1 && (
-                <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: '#002147', margin: 0 }}>
-                    Part I: Core Performance Competencies
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, marginBottom: 24 }}>
-                    Rate the management trainee on the 7 key competencies below. Scale: 1 = Unsatisfactory, 2 = Needs Improvement, 3 = Meets Requirements, 4 = Exceeds Requirements, 5 = Exceptional.
-                  </p>
+                {Object.keys(traineeAnswers).length === 0 ? (
+                  <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>No trainee self-assessment answers found.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 13 }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
+                        Self-Ratings (1–5 Scale)
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {traineeQuestionsList.map((tq) => {
+                          const rVal = traineeAnswers[tq.id];
+                          const cVal = traineeAnswers[tq.cid] ?? traineeAnswers[`${tq.id}_comment`];
+                          return (
+                            <div key={tq.id} style={{ padding: 10, borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                                <span style={{ color: 'var(--text)', fontWeight: 600, fontSize: 12 }}>{tq.label}</span>
+                                <span className="gh-badge gh-badge-open" style={{ flexShrink: 0 }}>
+                                  Score: {rVal || '—'} / 5
+                                </span>
+                              </div>
+                              {cVal && (
+                                <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                  &ldquo;{cVal}&rdquo;
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    {ratingCompetencies.map((comp) => (
-                      <div key={comp.id} style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: 20 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{comp.title}</div>
-                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2, marginBottom: 12 }}>{comp.desc}</div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
+                        Key Tasks / Projects Completed (Past 90 Days)
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {traineeAnswers.t_q1a && <li>{traineeAnswers.t_q1a}</li>}
+                        {traineeAnswers.t_q1b && <li>{traineeAnswers.t_q1b}</li>}
+                        {traineeAnswers.t_q1c && <li>{traineeAnswers.t_q1c}</li>}
+                      </ul>
+                    </div>
 
-                        {/* 1-5 Radio Buttons */}
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                          {[
-                            { val: 5, label: '5 - Exceptional' },
-                            { val: 4, label: '4 - Exceeds Req.' },
-                            { val: 3, label: '3 - Meets Req.' },
-                            { val: 2, label: '2 - Needs Impr.' },
-                            { val: 1, label: '1 - Unsatisfactory' },
-                          ].map((scale) => {
-                            const isSelected = answers[comp.id] === scale.val;
-                            return (
-                              <button
-                                key={scale.val}
-                                type="button"
-                                disabled={isReadOnly}
-                                onClick={() => updateAnswer(comp.id, scale.val)}
-                                style={{
-                                  padding: '8px 14px',
-                                  borderRadius: 8,
-                                  border: isSelected ? '2px solid #002147' : '1px solid #cbd5e1',
-                                  background: isSelected ? '#002147' : '#fff',
-                                  color: isSelected ? '#fff' : '#334155',
-                                  fontWeight: isSelected ? 700 : 500,
-                                  fontSize: 12,
-                                  cursor: isReadOnly ? 'default' : 'pointer',
-                                  transition: 'all 0.15s',
-                                }}
-                              >
-                                {scale.label}
-                              </button>
-                            );
-                          })}
+                    {traineeAnswers.t_q2 && (
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                          Workflow Changes / Operational Improvements
                         </div>
-
-                        {/* Optional/Required Justification Comment */}
-                        <div style={{ marginTop: 10 }}>
-                          <input
-                            type="text"
-                            placeholder="Evidence / remarks for this rating..."
-                            disabled={isReadOnly}
-                            value={answers[`${comp.id}_comment`] || answers[`s_c${comp.id.replace('s_r', '')}`] || ''}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              updateAnswer(`${comp.id}_comment`, val);
-                              updateAnswer(`s_c${comp.id.replace('s_r', '')}`, val);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '8px 12px',
-                              borderRadius: 6,
-                              border: '1px solid #e2e8f0',
-                              fontSize: 12,
-                              outline: 'none',
-                              boxSizing: 'border-box',
-                            }}
-                          />
+                        <div style={{ padding: 10, borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                          {traineeAnswers.t_q2}
                         </div>
                       </div>
-                    ))}
+                    )}
+
+                    {traineeAnswers.t_q4 && (
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                          Resources & Leadership Opportunities Needed (Next 6–12 Months)
+                        </div>
+                        <div style={{ padding: 10, borderRadius: 8, background: 'var(--bg-3)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                          {traineeAnswers.t_q4}
+                        </div>
+                      </div>
+                    )}
+
+                    {traineeAnswers.t_overall && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-muted)', fontSize: 12 }}>Trainee Overall Self-Rating:</span>
+                        <span className="gh-badge gh-badge-complete" style={{ textTransform: 'uppercase' }}>
+                          {String(traineeAnswers.t_overall).replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    )}
                   </div>
+                )}
+              </div>
+            )}
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
-                    <button
-                      onClick={() => setCurrentStep(2)}
-                      style={{
-                        padding: '10px 24px',
-                        background: '#002147',
-                        color: '#fff',
-                        borderRadius: 8,
-                        border: 'none',
-                        fontWeight: 600,
-                        fontSize: 14,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Next: Key Strengths →
-                    </button>
+            <div>
+              {/* Step Indicator */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 28,
+                background: 'var(--bg-card)',
+                padding: '12px 20px',
+                borderRadius: 12,
+                border: '1px solid var(--border)',
+                flexWrap: 'wrap',
+                gap: 8,
+              }}>
+                {[
+                  { num: 1, title: 'Ratings & Comments' },
+                  { num: 2, title: 'Strengths' },
+                  { num: 3, title: 'Improvements' },
+                  { num: 4, title: 'Overall & Rec.' },
+                  { num: 5, title: 'Signature' },
+                ].map((step) => (
+                  <button
+                    key={step.num}
+                    onClick={() => setCurrentStep(step.num)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      background: currentStep === step.num ? 'var(--bg-3)' : 'transparent',
+                    }}
+                  >
+                    <div style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      background: currentStep === step.num ? 'var(--accent)' : currentStep > step.num ? 'var(--success)' : 'var(--border)',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}>
+                      {currentStep > step.num ? '✓' : step.num}
+                    </div>
+                    <span style={{
+                      fontSize: 13,
+                      fontWeight: currentStep === step.num ? 700 : 500,
+                      color: currentStep === step.num ? 'var(--text)' : 'var(--text-dim)',
+                    }}>
+                      {step.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Form Content Steps */}
+              <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: 32, boxShadow: 'var(--shadow)' }}>
+                {/* STEP 1: Core Performance Ratings */}
+                {currentStep === 1 && (
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      Part I: Core Performance Competencies & Supervisor Comments
+                    </h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6, marginBottom: 24 }}>
+                      Rate the management trainee on the 7 key assessment areas below and enter your comments/observations for each item. Your comments will appear directly in the Supervisor Comments column of the official appraisal sheet.
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                      {ratingCompetencies.map((comp) => {
+                        const commentVal = answers[comp.cid] ?? answers[`${comp.id}_comment`] ?? '';
+                        return (
+                          <div key={comp.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{comp.title}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2, marginBottom: 12 }}>{comp.desc}</div>
+
+                            {/* 1-5 Radio Buttons */}
+                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                              {[
+                                { val: 5, label: '5 - Exceptional' },
+                                { val: 4, label: '4 - Exceeds Expectations' },
+                                { val: 3, label: '3 - Meets Expectations' },
+                                { val: 2, label: '2 - Needs Development' },
+                                { val: 1, label: '1 - Unsatisfactory' },
+                              ].map((scale) => {
+                                const isSelected = String(answers[comp.id]) === String(scale.val);
+                                return (
+                                  <button
+                                    key={scale.val}
+                                    type="button"
+                                    disabled={isReadOnly}
+                                    onClick={() => updateAnswer(comp.id, scale.val)}
+                                    style={{
+                                      padding: '8px 14px',
+                                      borderRadius: 8,
+                                      border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                                      background: isSelected ? 'var(--accent)' : 'var(--bg)',
+                                      color: isSelected ? '#fff' : 'var(--text)',
+                                      fontWeight: isSelected ? 700 : 500,
+                                      fontSize: 12,
+                                      cursor: isReadOnly ? 'default' : 'pointer',
+                                      transition: 'all 0.15s',
+                                    }}
+                                  >
+                                    {scale.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Supervisor Comment Input */}
+                            <div style={{ marginTop: 12 }}>
+                              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 4 }}>
+                                Supervisor Comment / Observation:
+                              </label>
+                              <textarea
+                                rows={2}
+                                placeholder="Enter supervisor comments or evidence for this rating (displayed on final appraisal sheet)..."
+                                disabled={isReadOnly}
+                                value={commentVal}
+                                onChange={(e) => updateAnswer(comp.cid, e.target.value)}
+                                className="gh-input"
+                                style={{
+                                  width: '100%',
+                                  padding: '8px 12px',
+                                  fontSize: 12,
+                                  resize: 'vertical',
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 28 }}>
+                      <button
+                        onClick={() => setCurrentStep(2)}
+                        className="gh-btn gh-btn-primary"
+                        style={{ padding: '10px 24px', fontSize: 14 }}
+                      >
+                        Next: Key Strengths →
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* STEP 2: Key Strengths */}
-              {currentStep === 2 && (
-                <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: '#002147', margin: 0 }}>
-                    Part II: Trainee's Key Strengths
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, marginBottom: 24 }}>
-                    Detail three distinct areas where the trainee has demonstrated clear strength, aptitude, or positive impact during this period.
-                  </p>
+                {/* STEP 2: Key Strengths */}
+                {currentStep === 2 && (
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      Part II: Trainee&apos;s Key Strengths
+                    </h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6, marginBottom: 24 }}>
+                      Detail three distinct areas where the trainee has demonstrated clear strength, aptitude, or positive impact during this period.
+                    </p>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {[
-                      { id: 's_q1a', label: 'Key Strength 1' },
-                      { id: 's_q1b', label: 'Key Strength 2' },
-                      { id: 's_q1c', label: 'Key Strength 3' },
-                    ].map((field) => (
-                      <div key={field.id}>
-                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                          {field.label}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                      {[
+                        { id: 's_q1a', label: 'Key Strength 1 (a)' },
+                        { id: 's_q1b', label: 'Key Strength 2 (b)' },
+                        { id: 's_q1c', label: 'Key Strength 3 (c)' },
+                      ].map((field) => (
+                        <div key={field.id}>
+                          <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
+                            {field.label}
+                          </label>
+                          <textarea
+                            rows={3}
+                            disabled={isReadOnly}
+                            placeholder="Provide concrete examples or observations..."
+                            value={answers[field.id] ?? ''}
+                            onChange={(e) => updateAnswer(field.id, e.target.value)}
+                            className="gh-input"
+                            style={{ width: '100%', padding: 12, fontSize: 13 }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+                      <button
+                        onClick={() => setCurrentStep(1)}
+                        className="gh-btn gh-btn-ghost"
+                        style={{ padding: '10px 20px', fontSize: 13 }}
+                      >
+                        ← Back to Ratings
+                      </button>
+                      <button
+                        onClick={() => setCurrentStep(3)}
+                        className="gh-btn gh-btn-primary"
+                        style={{ padding: '10px 24px', fontSize: 14 }}
+                      >
+                        Next: Improvements →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: Areas for Improvement & L&D Plan */}
+                {currentStep === 3 && (
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      Part III: Development & Training Plan
+                    </h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6, marginBottom: 24 }}>
+                      Identify critical growth opportunities and recommended learning paths for this management trainee.
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          Specific Areas Requiring Improvement or Behavioural Development:
+                        </label>
+                        <textarea
+                          rows={4}
+                          disabled={isReadOnly}
+                          placeholder="Outline skills, mindset, or performance habits the trainee needs to enhance..."
+                          value={answers.s_q_dev ?? ''}
+                          onChange={(e) => updateAnswer('s_q_dev', e.target.value)}
+                          className="gh-input"
+                          style={{ width: '100%', padding: 12, fontSize: 13 }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          Recommended Training Programmes / Learning Interventions (L&D):
                         </label>
                         <textarea
                           rows={3}
                           disabled={isReadOnly}
-                          placeholder="Provide concrete examples or observations..."
-                          value={answers[field.id] || ''}
-                          onChange={(e) => updateAnswer(field.id, e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: 12,
-                            borderRadius: 8,
-                            border: '1px solid #cbd5e1',
-                            fontSize: 13,
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
+                          placeholder="Specify relevant workshops, mentorship pairings, or technical modules..."
+                          value={answers.s_q2 ?? ''}
+                          onChange={(e) => updateAnswer('s_q2', e.target.value)}
+                          className="gh-input"
+                          style={{ width: '100%', padding: 12, fontSize: 13 }}
                         />
                       </div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
-                    <button
-                      onClick={() => setCurrentStep(1)}
-                      style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                    >
-                      ← Back to Ratings
-                    </button>
-                    <button
-                      onClick={() => setCurrentStep(3)}
-                      style={{ padding: '10px 24px', background: '#002147', color: '#fff', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
-                    >
-                      Next: Improvements →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 3: Areas for Improvement & L&D Plan */}
-              {currentStep === 3 && (
-                <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: '#002147', margin: 0 }}>
-                    Part III: Development & Training Plan
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, marginBottom: 24 }}>
-                    Identify critical growth opportunities and recommended learning paths for this management trainee.
-                  </p>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                        Specific Areas Requiring Improvement or Behavioural Development:
-                      </label>
-                      <textarea
-                        rows={4}
-                        disabled={isReadOnly}
-                        placeholder="Outline skills, mindset, or performance habits the trainee needs to enhance..."
-                        value={answers.s_q_dev || ''}
-                        onChange={(e) => updateAnswer('s_q_dev', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: 12,
-                          borderRadius: 8,
-                          border: '1px solid #cbd5e1',
-                          fontSize: 13,
-                          outline: 'none',
-                          boxSizing: 'border-box',
-                        }}
-                      />
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                        Recommended Training Programmes / Learning Interventions (L&D):
-                      </label>
-                      <textarea
-                        rows={3}
-                        disabled={isReadOnly}
-                        placeholder="Specify relevant workshops, mentorship pairings, or technical modules..."
-                        value={answers.s_q2 || ''}
-                        onChange={(e) => updateAnswer('s_q2', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: 12,
-                          borderRadius: 8,
-                          border: '1px solid #cbd5e1',
-                          fontSize: 13,
-                          outline: 'none',
-                          boxSizing: 'border-box',
-                        }}
-                      />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+                      <button
+                        onClick={() => setCurrentStep(2)}
+                        className="gh-btn gh-btn-ghost"
+                        style={{ padding: '10px 20px', fontSize: 13 }}
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        onClick={() => setCurrentStep(4)}
+                        className="gh-btn gh-btn-primary"
+                        style={{ padding: '10px 24px', fontSize: 14 }}
+                      >
+                        Next: Overall Evaluation →
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
-                    <button
-                      onClick={() => setCurrentStep(2)}
-                      style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                    >
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => setCurrentStep(4)}
-                      style={{ padding: '10px 24px', background: '#002147', color: '#fff', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
-                    >
-                      Next: Overall Evaluation →
-                    </button>
+                {/* STEP 4: Overall Rating & Recommendation */}
+                {currentStep === 4 && (
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      Part IV: Overall Rating & Official Recommendation
+                    </h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6, marginBottom: 24 }}>
+                      Provide your holistic evaluation and career status recommendation for HR consideration.
+                    </p>
+
+                    {/* Overall Rating */}
+                    <div style={{ marginBottom: 28 }}>
+                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>
+                        Supervisor Overall Performance Rating:
+                      </label>
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {[
+                          { val: 'exceptional', label: 'Exceptional' },
+                          { val: 'exceeds_expectations', label: 'Exceeds Expectations' },
+                          { val: 'meets_expectations', label: 'Meets Expectations' },
+                          { val: 'needs_development', label: 'Needs Development' },
+                          { val: 'unsatisfactory', label: 'Unsatisfactory' },
+                        ].map((opt) => {
+                          const checked = isSupervisorOverallSelected(answers.s_overall, opt.val);
+                          return (
+                            <label
+                              key={opt.val}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '10px 16px',
+                                borderRadius: 8,
+                                border: checked ? '2px solid var(--accent)' : '1px solid var(--border)',
+                                background: checked ? 'var(--accent-dim)' : 'var(--bg)',
+                                color: 'var(--text)',
+                                cursor: isReadOnly ? 'default' : 'pointer',
+                                fontWeight: 600,
+                                fontSize: 13,
+                              }}
+                            >
+                              <input
+                                type="radio"
+                                name="s_overall"
+                                disabled={isReadOnly}
+                                checked={checked}
+                                onChange={() => updateAnswer('s_overall', opt.val)}
+                              />
+                              {opt.label}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Trainee Progression Recommendation */}
+                    <div style={{ marginBottom: 28 }}>
+                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>
+                        Recommendation on Trainee Status:
+                      </label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {[
+                          { val: 'confirm_promotion', label: 'Confirm Appointment / Fast-Track Promotion to Unit Lead' },
+                          { val: 'retain_on_track', label: 'Continue Programme / On Track for Standard Confirmation' },
+                          { val: 'extend_probation', label: 'Extend Probationary Period (requires 90-day PIP)' },
+                          { val: 'reassign_unit', label: 'Reassign to Alternative Business Unit or Function' },
+                          { val: 'discontinue', label: 'Discontinue from Management Trainee Programme' },
+                        ].map((rec) => (
+                          <label
+                            key={rec.val}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 10,
+                              padding: '10px 14px',
+                              borderRadius: 8,
+                              border: answers.s_recommendation === rec.val ? '2px solid var(--accent)' : '1px solid var(--border)',
+                              background: answers.s_recommendation === rec.val ? 'var(--accent-dim)' : 'var(--bg)',
+                              cursor: isReadOnly ? 'default' : 'pointer',
+                              fontSize: 13,
+                              color: 'var(--text)',
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="s_recommendation"
+                              disabled={isReadOnly}
+                              checked={answers.s_recommendation === rec.val}
+                              onChange={() => updateAnswer('s_recommendation', rec.val)}
+                            />
+                            {rec.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+                      <button
+                        onClick={() => setCurrentStep(3)}
+                        className="gh-btn gh-btn-ghost"
+                        style={{ padding: '10px 20px', fontSize: 13 }}
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        onClick={() => setCurrentStep(5)}
+                        className="gh-btn gh-btn-primary"
+                        style={{ padding: '10px 24px', fontSize: 14 }}
+                      >
+                        Next: Sign & Submit →
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* STEP 4: Overall Rating & Recommendation */}
-              {currentStep === 4 && (
-                <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: '#002147', margin: 0 }}>
-                    Part IV: Overall Rating & Official Recommendation
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, marginBottom: 24 }}>
-                    Provide your holistic evaluation and career status recommendation for HR consideration.
-                  </p>
+                {/* STEP 5: Signature & Final Submit */}
+                {currentStep === 5 && (
+                  <div>
+                    <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                      Part V: Supervisor Declaration & Digital Signature
+                    </h2>
+                    <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6, marginBottom: 24 }}>
+                      I confirm that I have evaluated this management trainee objectively according to Genesis Group performance standards and discussed performance feedback with them.
+                    </p>
 
-                  {/* Overall Rating */}
-                  <div style={{ marginBottom: 28 }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 10 }}>
-                      Supervisor Overall Performance Rating:
-                    </label>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      {[
-                        { val: 'excellent', label: 'Excellent' },
-                        { val: 'very_good', label: 'Very Good' },
-                        { val: 'good', label: 'Good' },
-                        { val: 'fair', label: 'Fair' },
-                        { val: 'poor', label: 'Poor' },
-                      ].map((opt) => (
-                        <label
-                          key={opt.val}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '10px 16px',
-                            borderRadius: 8,
-                            border: answers.s_overall === opt.val ? '2px solid #002147' : '1px solid #cbd5e1',
-                            background: answers.s_overall === opt.val ? '#f0fdf4' : '#fff',
-                            cursor: isReadOnly ? 'default' : 'pointer',
-                            fontWeight: 600,
-                            fontSize: 13,
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            name="s_overall"
-                            disabled={isReadOnly}
-                            checked={answers.s_overall === opt.val}
-                            onChange={() => updateAnswer('s_overall', opt.val)}
-                          />
-                          {opt.label}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          Supervisor Name (Full Official Name):
                         </label>
-                      ))}
-                    </div>
-                  </div>
+                        <input
+                          type="text"
+                          disabled={isReadOnly}
+                          placeholder={session?.user?.name || 'e.g. David Adeleke'}
+                          value={answers.s_signature_name ?? ''}
+                          onChange={(e) => updateAnswer('s_signature_name', e.target.value)}
+                          className="gh-input"
+                        />
+                        <span style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4, display: 'block' }}>
+                          Defaults to your account name. You can edit this if your official signatory name differs.
+                        </span>
+                      </div>
 
-                  {/* Trainee Progression Recommendation */}
-                  <div style={{ marginBottom: 28 }}>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 10 }}>
-                      Recommendation on Trainee Status:
-                    </label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {[
-                        { val: 'confirm_promotion', label: 'Confirm Appointment / Fast-Track Promotion to Unit Lead' },
-                        { val: 'retain_on_track', label: 'Continue Programme / On Track for Standard Confirmation' },
-                        { val: 'extend_probation', label: 'Extend Probationary Period (requires 90-day PIP)' },
-                        { val: 'reassign_unit', label: 'Reassign to Alternative Business Unit or Function' },
-                        { val: 'discontinue', label: 'Discontinue from Management Trainee Programme' },
-                      ].map((rec) => (
-                        <label
-                          key={rec.val}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            padding: '10px 14px',
-                            borderRadius: 8,
-                            border: answers.s_recommendation === rec.val ? '2px solid #002147' : '1px solid #e2e8f0',
-                            background: answers.s_recommendation === rec.val ? '#f8fafc' : '#fff',
-                            cursor: isReadOnly ? 'default' : 'pointer',
-                            fontSize: 13,
-                            color: '#334155',
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            name="s_recommendation"
-                            disabled={isReadOnly}
-                            checked={answers.s_recommendation === rec.val}
-                            onChange={() => updateAnswer('s_recommendation', rec.val)}
-                          />
-                          {rec.label}
+                      <div>
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
+                          Date of Assessment:
                         </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
-                    <button
-                      onClick={() => setCurrentStep(3)}
-                      style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                    >
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => setCurrentStep(5)}
-                      style={{ padding: '10px 24px', background: '#002147', color: '#fff', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}
-                    >
-                      Next: Sign & Submit →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 5: Signature & Final Submit */}
-              {currentStep === 5 && (
-                <div>
-                  <h2 style={{ fontSize: 18, fontWeight: 800, color: '#002147', margin: 0 }}>
-                    Part V: Supervisor Declaration & Digital Signature
-                  </h2>
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 6, marginBottom: 24 }}>
-                    I confirm that I have evaluated this management trainee objectively according to Genesis Group performance standards and discussed performance feedback with them.
-                  </p>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                        Supervisor Name (Full Official Name):
-                      </label>
-                      <input
-                        type="text"
-                        disabled={isReadOnly}
-                        placeholder={session?.user?.name || 'e.g. David Adeleke'}
-                        value={answers.s_signature_name || ''}
-                        onChange={(e) => updateAnswer('s_signature_name', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          borderRadius: 8,
-                          border: '1px solid #cbd5e1',
-                          fontSize: 13,
-                          outline: 'none',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                      <span style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'block' }}>
-                        Defaults to your account name. You can edit this if your official signatory name differs.
-                      </span>
+                        <input
+                          type="date"
+                          disabled={isReadOnly}
+                          value={answers.s_signature_date ?? ''}
+                          onChange={(e) => updateAnswer('s_signature_date', e.target.value)}
+                          className="gh-input"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
-                        Date of Assessment:
-                      </label>
-                      <input
-                        type="date"
-                        disabled={isReadOnly}
-                        value={answers.s_signature_date || ''}
-                        onChange={(e) => updateAnswer('s_signature_date', e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '10px 14px',
-                          borderRadius: 8,
-                          border: '1px solid #cbd5e1',
-                          fontSize: 13,
-                          outline: 'none',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                    </div>
-                  </div>
+                    {/* Canvas Signature Pad */}
+                    <div style={{ marginBottom: 24 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
+                          Draw Digital Signature (Mouse or Touchscreen):
+                        </label>
+                        {!isReadOnly && (
+                          <button
+                            type="button"
+                            onClick={handleClearSignature}
+                            style={{ fontSize: 11, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Clear Canvas
+                          </button>
+                        )}
+                      </div>
 
-                  {/* Canvas Signature Pad */}
-                  <div style={{ marginBottom: 24 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <label style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>
-                        Draw Digital Signature (Mouse or Touchscreen):
-                      </label>
-                      {!isReadOnly && (
+                      <div style={{
+                        border: '2px dashed #cbd5e1',
+                        borderRadius: 8,
+                        background: '#ffffff',
+                        height: 120,
+                        position: 'relative',
+                      }}>
+                        <canvas
+                          ref={canvasRef}
+                          width={600}
+                          height={120}
+                          style={{ width: '100%', height: '100%', cursor: isReadOnly ? 'default' : 'crosshair' }}
+                        />
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>
+                        Your digital signature is recorded in compliance with official Genesis Group HR policy.
+                      </div>
+                    </div>
+
+                    {/* Submit Actions */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, borderTop: '1px solid var(--border)', paddingTop: 24 }}>
+                      <button
+                        onClick={() => setCurrentStep(4)}
+                        className="gh-btn gh-btn-ghost"
+                        style={{ padding: '10px 20px', fontSize: 13 }}
+                      >
+                        ← Back to Evaluation
+                      </button>
+
+                      {!isReadOnly ? (
                         <button
-                          type="button"
-                          onClick={handleClearSignature}
-                          style={{ fontSize: 11, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                          onClick={handleSubmit}
+                          disabled={submitting}
+                          style={{
+                            padding: '12px 32px',
+                            background: 'var(--success)',
+                            color: '#fff',
+                            borderRadius: 8,
+                            border: 'none',
+                            fontWeight: 700,
+                            fontSize: 14,
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
+                          }}
                         >
-                          Clear Canvas
+                          {submitting ? 'Submitting Final Assessment...' : '✓ Submit Completed Assessment'}
                         </button>
+                      ) : (
+                        <div style={{ color: 'var(--success)', fontWeight: 700, fontSize: 14 }}>
+                          ✓ Assessment already submitted
+                        </div>
                       )}
                     </div>
-
-                    <div style={{
-                      border: '2px dashed #cbd5e1',
-                      borderRadius: 8,
-                      background: '#f8fafc',
-                      height: 120,
-                      position: 'relative',
-                    }}>
-                      <canvas
-                        ref={canvasRef}
-                        width={600}
-                        height={120}
-                        style={{ width: '100%', height: '100%', cursor: isReadOnly ? 'default' : 'crosshair' }}
-                      />
-                    </div>
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                      Your digital signature is recorded in compliance with official Genesis Group HR policy.
-                    </div>
                   </div>
-
-                  {/* Submit Actions */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, borderTop: '1px solid #e2e8f0', paddingTop: 24 }}>
-                    <button
-                      onClick={() => setCurrentStep(4)}
-                      style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', borderRadius: 8, border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}
-                    >
-                      ← Back to Evaluation
-                    </button>
-
-                    {!isReadOnly ? (
-                      <button
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        style={{
-                          padding: '12px 32px',
-                          background: '#16a34a',
-                          color: '#fff',
-                          borderRadius: 8,
-                          border: 'none',
-                          fontWeight: 700,
-                          fontSize: 14,
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
-                        }}
-                      >
-                        {submitting ? 'Submitting Final Assessment...' : '✓ Submit Completed Assessment'}
-                      </button>
-                    ) : (
-                      <div style={{ color: '#16a34a', fontWeight: 700, fontSize: 14 }}>
-                        ✓ Assessment already submitted
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import JSZip from 'jszip';
 import { auth } from '@/lib/auth';
 import connectDB from '@/lib/db';
-import { Appraisal, Cycle, AuditLog } from '@/lib/models';
+import { Appraisal, Cycle, AuditLog, SupervisorSheet } from '@/lib/models';
 import { renderAppraisalStandaloneHtml } from '@/lib/documents/standaloneHtml';
 
 export async function GET(request: NextRequest) {
@@ -86,6 +86,16 @@ export async function GET(request: NextRequest) {
       '-------------------------------------------------------------------------',
     ];
 
+    const CONFIDENTIAL_TRAINEE_KEYS = new Set(['t_r4', 't_c4', 't_r4_comment', 't_q3']);
+    const appraisalIds = appraisals.map((a) => a._id);
+    const allSupSheets = await SupervisorSheet.find({ appraisalId: { $in: appraisalIds } }).sort({ updatedAt: 1 });
+    const supSheetsByAppraisal = new Map<string, any[]>();
+    for (const s of allSupSheets) {
+      const key = s.appraisalId.toString();
+      if (!supSheetsByAppraisal.has(key)) supSheetsByAppraisal.set(key, []);
+      supSheetsByAppraisal.get(key)!.push(s);
+    }
+
     for (let i = 0; i < appraisals.length; i++) {
       const a: any = appraisals[i];
       const cycle = a.cycleId as any;
@@ -93,15 +103,49 @@ export async function GET(request: NextRequest) {
       const supSheet = a.supervisorSheetId as any;
       const supervisor = a.supervisorId as any;
 
-      const rawTraineeAnswers = traineeSheet?.answers || {};
+      const rawTraineeAnswers: Record<string, any> = { ...(traineeSheet?.answers || {}) };
+      for (let idx = 1; idx <= 5; idx++) {
+        const cVal = rawTraineeAnswers[`t_c${idx}`] ?? rawTraineeAnswers[`t_r${idx}_comment`];
+        if (cVal !== undefined) {
+          rawTraineeAnswers[`t_c${idx}`] = cVal;
+          rawTraineeAnswers[`t_r${idx}_comment`] = cVal;
+        }
+      }
+
       const sanitizedTraineeAnswers: Record<string, any> = {};
       for (const [key, value] of Object.entries(rawTraineeAnswers)) {
-        if (key === 't_r4' || key === 't_r4_comment' || key === 't_q3') continue;
+        if (CONFIDENTIAL_TRAINEE_KEYS.has(key)) continue;
         sanitizedTraineeAnswers[key] = value;
       }
 
       const activeTraineeAnswers = isHrCopy && rawTraineeAnswers ? rawTraineeAnswers : sanitizedTraineeAnswers;
-      const supervisorAnswers = supSheet?.answers || {};
+      const supervisorAnswers: Record<string, any> = {};
+      const sheetsForApp = supSheetsByAppraisal.get(a._id.toString()) || [];
+      for (const s of sheetsForApp) {
+        if (s.answers && typeof s.answers === 'object') {
+          for (const [k, v] of Object.entries(s.answers)) {
+            if (v !== undefined && v !== null && v !== '') {
+              supervisorAnswers[k] = v;
+            } else if (!(k in supervisorAnswers)) {
+              supervisorAnswers[k] = v;
+            }
+          }
+        }
+      }
+      if (supSheet?.answers) {
+        for (const [k, v] of Object.entries(supSheet.answers)) {
+          if (v !== undefined && v !== null && v !== '') {
+            supervisorAnswers[k] = v;
+          }
+        }
+      }
+      for (let idx = 1; idx <= 7; idx++) {
+        const cVal = supervisorAnswers[`s_c${idx}`] ?? supervisorAnswers[`s_r${idx}_comment`];
+        if (cVal !== undefined) {
+          supervisorAnswers[`s_c${idx}`] = cVal;
+          supervisorAnswers[`s_r${idx}_comment`] = cVal;
+        }
+      }
 
       const traineeSignatureSvg =
         traineeSheet?.signatureSvg ||
@@ -131,12 +175,12 @@ export async function GET(request: NextRequest) {
       const supervisorDocData = {
         supervisorName: supervisorAnswers?.s_signature_name || supervisor?.name || '—',
         traineeName: a.traineeName,
-        staffId: supervisorAnswers?.s_staff_id || supervisor?.staffId || '—',
+        staffId: supervisorAnswers?.s_staff_id || a.traineeStaffId || supervisor?.staffId || '—',
         appraisalDate: a.supervisorSubmittedAt || supervisorAnswers?.s_signature_date,
         department: supervisorAnswers?.s_department || a.department,
         location: supervisorAnswers?.s_location || a.location,
         answers: supervisorAnswers || {},
-        signatureDataUrl: supervisorSignatureSvg || supervisorAnswers?.s_signature,
+        signatureDataUrl: supervisorSignatureSvg || supervisorAnswers?.s_signature_svg || supervisorAnswers?.s_signature,
       };
 
       const appraisalMeta = {

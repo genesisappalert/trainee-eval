@@ -214,10 +214,10 @@ export default function AdminSupervisorsPage() {
         marginBottom: 32,
       }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#002147', margin: 0 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
             Supervisor Management Directory
           </h1>
-          <p style={{ margin: '6px 0 0 0', color: '#64748b', fontSize: 14 }}>
+          <p style={{ margin: '6px 0 0 0', color: 'var(--text-dim)', fontSize: 14 }}>
             Generate and manage Supervisor Access Codes for instant passwordless portal logins.
           </p>
         </div>
@@ -231,9 +231,9 @@ export default function AdminSupervisorsPage() {
             style={{
               padding: '10px 18px',
               borderRadius: 8,
-              border: '1px solid #cbd5e1',
-              background: '#fff',
-              color: '#334155',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-card)',
+              color: 'var(--text)',
               fontWeight: 700,
               fontSize: 13,
               cursor: 'pointer',
@@ -243,16 +243,12 @@ export default function AdminSupervisorsPage() {
           </button>
           <button
             onClick={() => setSingleModalOpen(true)}
+            className="gh-btn gh-btn-primary"
             style={{
               padding: '10px 20px',
               borderRadius: 8,
-              border: 'none',
-              background: '#002147',
-              color: '#fff',
               fontWeight: 700,
               fontSize: 13,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(0, 33, 71, 0.2)',
             }}
           >
             + Add Supervisor & Generate Code
@@ -261,33 +257,33 @@ export default function AdminSupervisorsPage() {
       </div>
 
       {/* Directory Box */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <input
             type="text"
             placeholder="Search by name, staff ID, or access code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, minWidth: 320, outline: 'none', background: '#fff' }}
+            style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 13, minWidth: 320, outline: 'none', background: 'var(--bg)', color: 'var(--text)' }}
           />
-          <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
-            Active Supervisors: <strong>{supervisors.length}</strong>
+          <div style={{ fontSize: 13, color: 'var(--text-dim)', fontWeight: 600 }}>
+            Active Supervisors: <strong style={{ color: 'var(--text)' }}>{supervisors.length}</strong>
           </div>
         </div>
 
         {loading ? (
-          <div style={{ padding: 60, textAlign: 'center' }}>
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-dim)' }}>
             <p>Loading supervisors...</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-dim)' }}>
             No supervisors match your search.
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
+                <tr style={{ background: 'var(--bg-3)', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontWeight: 700 }}>
                   <th style={{ padding: '12px 20px' }}>Supervisor Name</th>
                   <th style={{ padding: '12px 16px' }}>Staff ID</th>
                   <th style={{ padding: '12px 16px' }}>Access Code (Login Key)</th>
@@ -304,23 +300,23 @@ export default function AdminSupervisorsPage() {
                   return (
                     <tr
                       key={sup._id}
-                      style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
+                      style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-3)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
                       <td style={{ padding: '14px 20px' }}>
-                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{sup.name}</div>
-                        <div style={{ fontSize: 12, color: '#64748b' }}>{sup.email}</div>
+                        <div style={{ fontWeight: 700, color: 'var(--text)' }}>{sup.name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{sup.email}</div>
                       </td>
-                      <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontWeight: 600, color: '#334155' }}>
+                      <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>
                         {sup.staffId}
                       </td>
 
                       {/* Access Code Column */}
                       <td style={{ padding: '14px 16px' }}>
                         {sup.accessCode ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: '4px 8px', borderRadius: 6, border: '1px solid #cbd5e1' }}>
-                            <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#002147', letterSpacing: '0.04em' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--bg-3)', padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--text)', letterSpacing: '0.04em' }}>
                               {sup.accessCode}
                             </span>
                             <button
@@ -332,34 +328,34 @@ export default function AdminSupervisorsPage() {
                             </button>
                           </div>
                         ) : (
-                          <span style={{ color: '#dc2626', fontSize: 11, fontWeight: 600 }}>No code set</span>
+                          <span style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 600 }}>No code set</span>
                         )}
                       </td>
 
                       <td style={{ padding: '14px 16px' }}>
-                        <div style={{ fontWeight: 600, color: '#334155' }}>{sup.department || '—'}</div>
-                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{sup.location || '—'}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{sup.department || '—'}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{sup.location || '—'}</div>
                       </td>
 
                       <td style={{ padding: '14px 16px' }}>
                         {isLocked ? (
-                          <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: '#fee2e2', color: '#991b1b' }}>
+                          <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: 'var(--danger-dim)', color: 'var(--danger)' }}>
                             🔒 Locked
                           </span>
                         ) : sup.active ? (
-                          <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: '#dcfce7', color: '#166534' }}>
+                          <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: 'var(--success-dim)', color: 'var(--success)' }}>
                             Active
                           </span>
                         ) : (
-                          <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: '#e2e8f0', color: '#64748b' }}>
+                          <span style={{ padding: '3px 8px', borderRadius: 10, fontSize: 11, fontWeight: 700, background: 'var(--bg-3)', color: 'var(--text-dim)' }}>
                             Deactivated
                           </span>
                         )}
                       </td>
 
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{ fontWeight: 700, color: '#002147' }}>{sup.assignedCount}</span> assigned (
-                        <span style={{ color: '#16a34a' }}>{sup.completedCount} done</span>)
+                      <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>{sup.assignedCount}</span> assigned (
+                        <span style={{ color: 'var(--success)' }}>{sup.completedCount} done</span>)
                       </td>
 
                       <td style={{ padding: '14px 20px', textAlign: 'right' }}>
@@ -367,20 +363,20 @@ export default function AdminSupervisorsPage() {
                           {isLocked && (
                             <button
                               onClick={() => handleUnlock(sup)}
-                              style={{ padding: '5px 10px', borderRadius: 6, background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                              style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--warning-dim)', border: '1px solid var(--warning)', color: 'var(--warning)', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
                             >
                               Unlock
                             </button>
                           )}
                           <button
                             onClick={() => handleRegenerateCode(sup)}
-                            style={{ padding: '5px 10px', borderRadius: 6, background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#002147', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
+                            style={{ padding: '5px 10px', borderRadius: 6, background: 'var(--bg-3)', border: '1px solid var(--border)', color: 'var(--text)', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
                           >
                             New Code
                           </button>
                           <button
                             onClick={() => handleToggleActive(sup)}
-                            style={{ padding: '5px 8px', borderRadius: 6, background: 'none', border: 'none', color: sup.active ? '#94a3b8' : '#16a34a', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
+                            style={{ padding: '5px 8px', borderRadius: 6, background: 'none', border: 'none', color: sup.active ? 'var(--text-dim)' : 'var(--success)', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}
                           >
                             {sup.active ? 'Deactivate' : 'Activate'}
                           </button>

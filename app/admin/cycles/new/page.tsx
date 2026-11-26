@@ -94,27 +94,27 @@ export default function NewCyclePage() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '36px 24px' }}>
       <div style={{ marginBottom: 24 }}>
-        <Link href="/admin/cycles" style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
+        <Link href="/admin/cycles" style={{ fontSize: 13, color: 'var(--text-dim)', textDecoration: 'none', fontWeight: 600 }}>
           ← Back to Cycles
         </Link>
-        <h1 style={{ fontSize: 26, fontWeight: 800, color: '#002147', margin: '8px 0 0 0' }}>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', margin: '8px 0 0 0' }}>
           Create New Assessment Cycle
         </h1>
-        <p style={{ color: '#64748b', fontSize: 14, margin: '4px 0 0 0' }}>
+        <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '4px 0 0 0' }}>
           Configure a new cohort cycle, specify submission windows, and attach authorized supervisors.
         </p>
       </div>
 
       {error && (
-        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 13, fontWeight: 600 }}>
+        <div style={{ background: 'var(--danger-dim)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--danger)', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 13, fontWeight: 600 }}>
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: 32, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+      <form onSubmit={handleSubmit} style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: 32, boxShadow: 'var(--shadow)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
               Cycle Name: *
             </label>
             <input
@@ -123,17 +123,17 @@ export default function NewCyclePage() {
               placeholder="e.g. 2026 Cohort Annual Assessment"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              className="gh-input"
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 URL Slug: *
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: 8, overflow: 'hidden' }}>
-                <span style={{ background: '#f8fafc', color: '#64748b', padding: '10px 12px', fontSize: 12, borderRight: '1px solid #cbd5e1' }}>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--bg)' }}>
+                <span style={{ background: 'var(--bg-3)', color: 'var(--text-dim)', padding: '10px 12px', fontSize: 12, borderRight: '1px solid var(--border)' }}>
                   /a/
                 </span>
                 <input
@@ -142,13 +142,13 @@ export default function NewCyclePage() {
                   placeholder="2026-annual"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                  style={{ flex: 1, padding: '10px 12px', border: 'none', outline: 'none', fontSize: 13 }}
+                  style={{ flex: 1, padding: '10px 12px', border: 'none', outline: 'none', fontSize: 13, background: 'transparent', color: 'var(--text)' }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Cohort: *
               </label>
               <input
@@ -157,7 +157,7 @@ export default function NewCyclePage() {
                 placeholder="e.g. Cohort 2026-B"
                 value={cohort}
                 onChange={(e) => setCohort(e.target.value)}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                className="gh-input"
               />
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function NewCyclePage() {
           {/* Dates */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Opens At: *
               </label>
               <input
@@ -173,12 +173,12 @@ export default function NewCyclePage() {
                 required
                 value={opensAt}
                 onChange={(e) => setOpensAt(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                className="gh-input"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Trainee Deadline: *
               </label>
               <input
@@ -186,12 +186,12 @@ export default function NewCyclePage() {
                 required
                 value={traineeDeadline}
                 onChange={(e) => setTraineeDeadline(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                className="gh-input"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Supervisor Deadline: *
               </label>
               <input
@@ -199,7 +199,7 @@ export default function NewCyclePage() {
                 required
                 value={supervisorDeadline}
                 onChange={(e) => setSupervisorDeadline(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                className="gh-input"
               />
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function NewCyclePage() {
           {/* Supervisor attachment */}
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <label style={{ fontSize: 13, fontWeight: 700, color: '#334155' }}>
+              <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>
                 Attach Authorized Supervisors ({selectedSupervisors.length} selected):
               </label>
               <button
@@ -217,7 +217,7 @@ export default function NewCyclePage() {
                     selectedSupervisors.length === supervisors.length ? [] : supervisors.map((s) => s._id)
                   )
                 }
-                style={{ fontSize: 12, color: '#002147', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 {selectedSupervisors.length === supervisors.length ? 'Deselect All' : 'Select All'}
               </button>
@@ -226,16 +226,16 @@ export default function NewCyclePage() {
             <div style={{
               maxHeight: 200,
               overflowY: 'auto',
-              border: '1px solid #cbd5e1',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               padding: 10,
               display: 'flex',
               flexDirection: 'column',
               gap: 8,
-              background: '#f8fafc',
+              background: 'var(--bg-3)',
             }}>
               {supervisors.map((s) => (
-                <label key={s._id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#334155', cursor: 'pointer' }}>
+                <label key={s._id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
                     checked={selectedSupervisors.includes(s._id)}
@@ -252,31 +252,16 @@ export default function NewCyclePage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
             <Link
               href="/admin/cycles"
-              style={{
-                padding: '10px 20px',
-                borderRadius: 8,
-                border: '1px solid #cbd5e1',
-                color: '#475569',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: 13,
-              }}
+              className="gh-btn gh-btn-ghost"
+              style={{ textDecoration: 'none' }}
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={submitting}
-              style={{
-                padding: '10px 24px',
-                borderRadius: 8,
-                border: 'none',
-                background: '#002147',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
+              className="gh-btn gh-btn-primary"
+              style={{ padding: '10px 24px', fontSize: 14 }}
             >
               {submitting ? 'Creating...' : 'Create Cycle'}
             </button>

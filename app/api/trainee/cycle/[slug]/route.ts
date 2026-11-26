@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import { Cycle, Appraisal, TraineeSheet, User, FormVersion, AppraisalFlag } from '@/lib/models';
+import { Cycle, Appraisal, TraineeSheet, User, FormVersion, AppraisalFlag, RosterEntry } from '@/lib/models';
 import { createHash, randomBytes } from 'crypto';
 
 // GET /api/trainee/cycle/[slug] — Get cycle info + supervisor list for trainee form
@@ -81,6 +81,16 @@ export async function POST(
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
     const userAgent = request.headers.get('user-agent') || '';
 
+    // Normalize trainee rating comments so both t_c1..t_c5 and t_r1_comment..t_r5_comment stay synced
+    const normalizedAnswers: Record<string, any> = { ...(answers || {}) };
+    for (let i = 1; i <= 5; i++) {
+      const cVal = normalizedAnswers[`t_c${i}`] ?? normalizedAnswers[`t_r${i}_comment`];
+      if (cVal !== undefined) {
+        normalizedAnswers[`t_c${i}`] = cVal;
+        normalizedAnswers[`t_r${i}_comment`] = cVal;
+      }
+    }
+
     // If token provided, update existing draft
     if (token) {
       const tokenHash = createHash('sha256').update(token).digest('hex');
@@ -91,39 +101,56 @@ export async function POST(
       }
 
       // Update answers
-      sheet.answers = { ...sheet.answers, ...answers };
+      sheet.answers = { ...(sheet.answers || {}), ...normalizedAnswers };
+      sheet.markModified('answers');
       await sheet.save();
 
       // Update appraisal if identity fields changed
-      if (answers.t_name || answers.t_staff_id || answers.t_department || answers.t_location || answers.t_email) {
+      if (normalizedAnswers.t_name || normalizedAnswers.t_staff_id || normalizedAnswers.t_department || normalizedAnswers.t_location || normalizedAnswers.t_email) {
         const updateFields: Record<string, unknown> = {};
-        if (answers.t_name) updateFields.traineeName = answers.t_name;
-        if (answers.t_staff_id) updateFields.traineeStaffId = answers.t_staff_id;
-        if (answers.t_department) updateFields.department = answers.t_department;
-        if (answers.t_location) updateFields.location = answers.t_location;
-        if (answers.t_email) updateFields.traineeEmail = answers.t_email;
-        if (answers.t_supervisor && answers.t_supervisor !== 'unassigned') {
-          updateFields.supervisorId = answers.t_supervisor;
+        if (normalizedAnswers.t_name) updateFields.traineeName = normalizedAnswers.t_name;
+        if (normalizedAnswers.t_staff_id) updateFields.traineeStaffId = String(normalizedAnswers.t_staff_id).trim().toUpperCase();
+        if (normalizedAnswers.t_department) updateFields.department = normalizedAnswers.t_department;
+        if (normalizedAnswers.t_location) updateFields.location = normalizedAnswers.t_location;
+        if (normalizedAnswers.t_email) updateFields.traineeEmail = normalizedAnswers.t_email;
+        if (normalizedAnswers.t_supervisor && normalizedAnswers.t_supervisor !== 'unassigned') {
+          updateFields.supervisorId = normalizedAnswers.t_supervisor;
         }
 
         await Appraisal.updateOne({ _id: sheet.appraisalId }, { $set: updateFields });
       }
 
-      // Handle supervisor selection flags
-      if (answers.t_supervisor) {
-        const appraisal = await Appraisal.findById(sheet.appraisalId);
-        if (appraisal) {
-          if (answers.t_supervisor === 'unassigned') {
+      // Handle supervisor selection flags & roster linking
+      const appraisal = await Appraisal.findById(sheet.appraisalId);
+      if (appraisal) {
+        if (normalizedAnswers.t_supervisor) {
+          if (normalizedAnswers.t_supervisor === 'unassigned') {
             appraisal.supervisorId = null;
             if (!appraisal.flags.includes('unassigned')) {
               appraisal.flags.push('unassigned');
             }
           } else {
-            appraisal.supervisorId = answers.t_supervisor;
+            appraisal.supervisorId = normalizedAnswers.t_supervisor;
             appraisal.flags = appraisal.flags.filter((f: string) => f !== 'unassigned');
           }
-          await appraisal.save();
         }
+
+        if (appraisal.traineeStaffId) {
+          const cleanStaffId = appraisal.traineeStaffId.trim().toUpperCase();
+          const rosterMatch = await RosterEntry.findOne({
+            cycleId: cycle._id,
+            staffId: cleanStaffId,
+          });
+          if (rosterMatch) {
+            appraisal.rosterEntryId = rosterMatch._id;
+            appraisal.flags = appraisal.flags.filter((f: string) => f !== 'unmatched');
+            if (!rosterMatch.appraisalId) {
+              rosterMatch.appraisalId = appraisal._id;
+              await rosterMatch.save();
+            }
+          }
+        }
+        await appraisal.save();
       }
 
       return NextResponse.json({
@@ -138,12 +165,14 @@ export async function POST(
     const newToken = randomBytes(16).toString('hex');
     const tokenHash = createHash('sha256').update(newToken).digest('hex');
 
+    const cleanStaffId = normalizedAnswers.t_staff_id ? String(normalizedAnswers.t_staff_id).trim().toUpperCase() : '';
+
     // Check for duplicates in this cycle
     const flags: AppraisalFlag[] = [];
-    if (answers.t_staff_id) {
+    if (cleanStaffId) {
       const existing = await Appraisal.findOne({
         cycleId: cycle._id,
-        traineeStaffId: answers.t_staff_id,
+        traineeStaffId: cleanStaffId,
         voidedAt: null,
       });
       if (existing) {
@@ -151,10 +180,21 @@ export async function POST(
       }
     }
 
+    // Check roster entry match
+    let matchedRoster: any = null;
+    if (cleanStaffId) {
+      matchedRoster = await RosterEntry.findOne({
+        cycleId: cycle._id,
+        staffId: cleanStaffId,
+      });
+    }
+
     // Handle supervisor
     let supervisorId = null;
-    if (answers.t_supervisor && answers.t_supervisor !== 'unassigned') {
-      supervisorId = answers.t_supervisor;
+    if (normalizedAnswers.t_supervisor && normalizedAnswers.t_supervisor !== 'unassigned') {
+      supervisorId = normalizedAnswers.t_supervisor;
+    } else if (matchedRoster?.expectedSupervisorId && !normalizedAnswers.t_supervisor) {
+      supervisorId = matchedRoster.expectedSupervisorId;
     } else {
       flags.push('unassigned');
     }
@@ -162,22 +202,28 @@ export async function POST(
     // Create appraisal record
     const appraisalDoc = await Appraisal.create({
       cycleId: cycle._id,
-      traineeStaffId: answers.t_staff_id || '',
-      traineeName: answers.t_name || '',
-      traineeEmail: answers.t_email || '',
-      department: answers.t_department || '',
-      location: answers.t_location || '',
+      traineeStaffId: cleanStaffId,
+      traineeName: normalizedAnswers.t_name || matchedRoster?.name || '',
+      traineeEmail: normalizedAnswers.t_email || matchedRoster?.email || '',
+      department: normalizedAnswers.t_department || matchedRoster?.department || '',
+      location: normalizedAnswers.t_location || matchedRoster?.location || '',
       supervisorId,
+      rosterEntryId: matchedRoster ? matchedRoster._id : null,
       status: 'trainee_draft',
       flags,
     });
     const appraisal = appraisalDoc as any;
 
+    if (matchedRoster && !matchedRoster.appraisalId) {
+      matchedRoster.appraisalId = appraisal._id;
+      await matchedRoster.save();
+    }
+
     // Create trainee sheet
     const sheet = await TraineeSheet.create({
       appraisalId: appraisal._id,
       formVersionId: cycle.traineeFormVersionId,
-      answers: answers || {},
+      answers: normalizedAnswers,
       status: 'draft',
       tokenHash,
       submitIp: ip,

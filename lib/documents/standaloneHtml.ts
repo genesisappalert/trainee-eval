@@ -44,12 +44,19 @@ function formatDocDate(dateVal?: string | Date | null): string {
 function isOverallMatch(val: string | undefined, optId: string): boolean {
   if (!val) return false;
   const v = val.toLowerCase().trim();
-  if (optId === 'exceptional') return v === 'exceptional' || v === 'excellent';
-  if (optId === 'exceeds_expectations') return v === 'exceeds_expectations' || v === 'exceeds expectation' || v === 'very_good' || v === 'very good';
-  if (optId === 'meets_expectations') return v === 'meets_expectations' || v === 'meets expectation' || v === 'good';
-  if (optId === 'needs_development') return v === 'needs_development' || v === 'fair';
-  if (optId === 'unsatisfactory') return v === 'unsatisfactory' || v === 'poor';
+  if (optId === 'exceptional' || optId === 'excellent') return v === 'exceptional' || v === 'excellent';
+  if (optId === 'exceeds_expectations' || optId === 'very_good') return v === 'exceeds_expectations' || v === 'exceeds expectation' || v === 'very_good' || v === 'very good';
+  if (optId === 'meets_expectations' || optId === 'good') return v === 'meets_expectations' || v === 'meets expectation' || v === 'good';
+  if (optId === 'needs_development' || optId === 'fair') return v === 'needs_development' || v === 'fair' || v === 'satisfactory';
+  if (optId === 'unsatisfactory' || optId === 'poor') return v === 'unsatisfactory' || v === 'poor' || v === 'needs improvement';
   return v === optId;
+}
+
+function getRatingCommentText(answers: Record<string, any>, cid: string, qid: string): string {
+  const raw = answers[cid] ?? answers[`${qid}_comment`];
+  if (raw === undefined || raw === null) return '—';
+  const trimmed = String(raw).trim();
+  return trimmed.length > 0 ? trimmed : '—';
 }
 
 export const STANDALONE_OFFICIAL_CSS = `
@@ -484,8 +491,8 @@ function renderSupervisorDocumentHtml(data: any, logoDataUrl: string): string {
           <span class="doc-bold" style="font-size: 13px;">${escapeHtml(a[q.id] || '—')}</span>
         </td>
         <td style="vertical-align: top; padding: 4px;">
-          <span style="font-size: 11px; line-height: 1.35; display: block; word-break: break-word;">
-            ${escapeHtml(a[q.cid] || a[`${q.id}_comment`] || '—')}
+          <span style="font-size: 11px; line-height: 1.35; display: block; word-break: break-word; white-space: pre-wrap;">
+            ${escapeHtml(getRatingCommentText(a, q.cid, q.id))}
           </span>
         </td>
       </tr>`
@@ -705,8 +712,8 @@ function renderTraineeDocumentHtml(data: any, logoDataUrl: string): string {
           <span class="doc-bold" style="font-size: 13px;">${escapeHtml(a[q.id] || '—')}</span>
         </td>
         <td style="vertical-align: top; padding: 4px;">
-          <span style="font-size: 11px; line-height: 1.35; display: block; word-break: break-word;">
-            ${escapeHtml(a[q.cid] || a[`${q.id}_comment`] || '—')}
+          <span style="font-size: 11px; line-height: 1.35; display: block; word-break: break-word; white-space: pre-wrap;">
+            ${escapeHtml(getRatingCommentText(a, q.cid, q.id))}
           </span>
         </td>
       </tr>`

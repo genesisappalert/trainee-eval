@@ -588,22 +588,23 @@ export default function SupervisorDashboard() {
           padding: 20,
         }}>
           <div style={{
-            background: '#fff',
+            background: 'var(--bg-card)',
             borderRadius: 16,
+            border: '1px solid var(--border)',
             maxWidth: 500,
             width: '100%',
             padding: 28,
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+            boxShadow: 'var(--shadow-xl)',
           }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#0f172a' }}>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
               Reassign Assessment Request
             </h3>
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 8 }}>
-              You are flagging that <strong>{selectedTrainee.traineeName}</strong> ({selectedTrainee.traineeStaffId}) should not be assessed by you. HR will review and reallocate this record.
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 8 }}>
+              You are flagging that <strong style={{ color: 'var(--text)' }}>{selectedTrainee.traineeName}</strong> ({selectedTrainee.traineeStaffId}) should not be assessed by you. HR will review and reallocate this record.
             </p>
 
             <div style={{ marginTop: 20 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 8 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
                 Reason for Reassignment:
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -613,7 +614,7 @@ export default function SupervisorDashboard() {
                   { value: 'not_direct_supervisor', label: 'I was not their primary supervising manager' },
                   { value: 'other', label: 'Other circumstance' },
                 ].map((opt) => (
-                  <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: '#334155', cursor: 'pointer' }}>
+                  <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
                     <input
                       type="radio"
                       name="reassign_reason"
@@ -628,7 +629,7 @@ export default function SupervisorDashboard() {
             </div>
 
             <div style={{ marginTop: 16 }}>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Additional Notes for HR (Optional):
               </label>
               <textarea
@@ -636,15 +637,7 @@ export default function SupervisorDashboard() {
                 placeholder="Mention correct supervisor if known (e.g. 'Should be assigned to Mr. Tunde in Supply Chain')..."
                 value={reassignComments}
                 onChange={(e) => setReassignComments(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: 10,
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                  fontSize: 13,
-                  outline: 'none',
-                  boxSizing: 'border-box',
-                }}
+                className="gh-input"
               />
             </div>
 
@@ -652,16 +645,7 @@ export default function SupervisorDashboard() {
               <button
                 onClick={() => setReassignModalOpen(false)}
                 disabled={reassignSubmitting}
-                style={{
-                  padding: '9px 16px',
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
-                  color: '#475569',
-                  fontWeight: 600,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
+                className="gh-btn gh-btn-ghost"
               >
                 Cancel
               </button>
@@ -672,7 +656,7 @@ export default function SupervisorDashboard() {
                   padding: '9px 18px',
                   borderRadius: 8,
                   border: 'none',
-                  background: '#dc2626',
+                  background: 'var(--danger)',
                   color: '#fff',
                   fontWeight: 600,
                   fontSize: 13,

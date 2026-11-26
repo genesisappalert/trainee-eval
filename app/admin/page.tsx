@@ -97,6 +97,14 @@ export default function AdminDashboard() {
         </div>
         <div className="top-header-actions">
           <ThemeToggle />
+          <Link href="/admin/analytics" className="gh-btn gh-btn-ghost">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="20" x2="18" y2="10" />
+              <line x1="12" y1="20" x2="12" y2="4" />
+              <line x1="6" y1="20" x2="6" y2="14" />
+            </svg>
+            Report Analytics
+          </Link>
           <Link href="/admin/cycles/new" className="gh-btn gh-btn-primary">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <line x1="12" y1="5" x2="12" y2="19" />
@@ -261,10 +269,37 @@ export default function AdminDashboard() {
         {/* Quick Actions */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: 'var(--space-4)',
           marginTop: 'var(--space-6)',
         }} className="animate-in animate-in-delay-2">
+          <div className="card" style={{ cursor: 'pointer' }}>
+            <Link href="/admin/analytics" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 12,
+                  background: 'var(--accent-dim)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent)',
+                  flexShrink: 0,
+                }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold">Report Analytics</div>
+                  <div className="text-sm text-muted">Competency benchmarks, calibration &amp; executive insights</div>
+                </div>
+              </div>
+            </Link>
+          </div>
           <div className="card" style={{ cursor: 'pointer' }}>
             <Link href="/admin/supervisors" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="card-body" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>

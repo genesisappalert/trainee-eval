@@ -35,18 +35,41 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Trainee answers sanitization: S-10 & T-11: Trainee's confidential answers (t_r4, t_r4_comment, t_q3)
+    // Trainee answers sanitization: S-10 & T-11: Trainee's confidential answers (t_r4, t_c4, t_r4_comment, t_q3)
     // MUST NOT be visible to the supervisor
-    let sanitizedTraineeAnswers: Record<string, any> = {};
+    const CONFIDENTIAL_TRAINEE_KEYS = new Set(['t_r4', 't_c4', 't_r4_comment', 't_q3']);
+    const sanitizedTraineeAnswers: Record<string, any> = {};
     if (appraisal.traineeSheetId) {
       const traineeSheet = appraisal.traineeSheetId as any;
       const raw = traineeSheet.answers || {};
       for (const [key, value] of Object.entries(raw)) {
-        if (key === 't_r4' || key === 't_r4_comment' || key === 't_q3') {
+        if (CONFIDENTIAL_TRAINEE_KEYS.has(key)) {
           // Confidential to HR — Redacted
           continue;
         }
         sanitizedTraineeAnswers[key] = value;
+      }
+      // Normalize trainee comment keys so both t_c1..t_c5 and t_r1_comment..t_r5_comment are available
+      for (let i = 1; i <= 5; i++) {
+        if (i === 4) continue; // confidential
+        const cVal = sanitizedTraineeAnswers[`t_c${i}`] ?? sanitizedTraineeAnswers[`t_r${i}_comment`];
+        if (cVal !== undefined) {
+          sanitizedTraineeAnswers[`t_c${i}`] = cVal;
+          sanitizedTraineeAnswers[`t_r${i}_comment`] = cVal;
+        }
+      }
+    }
+
+    // Normalize rawTraineeAnswers for HR copy as well
+    let normalizedRawTraineeAnswers: Record<string, any> = sanitizedTraineeAnswers;
+    if (isHr && appraisal.traineeSheetId) {
+      normalizedRawTraineeAnswers = { ...((appraisal.traineeSheetId as any).answers || {}) };
+      for (let i = 1; i <= 5; i++) {
+        const cVal = normalizedRawTraineeAnswers[`t_c${i}`] ?? normalizedRawTraineeAnswers[`t_r${i}_comment`];
+        if (cVal !== undefined) {
+          normalizedRawTraineeAnswers[`t_c${i}`] = cVal;
+          normalizedRawTraineeAnswers[`t_r${i}_comment`] = cVal;
+        }
       }
     }
 
@@ -54,14 +77,51 @@ export async function GET(
     const cycle = appraisal.cycleId as any;
     const supervisorForm = await FormVersion.findById(cycle.supervisorFormVersionId);
 
-    // Existing supervisor draft answers if any
+    // Populate supervisor user info for print/display fallbacks
+    await appraisal.populate('supervisorId', 'name staffId email department location savedSignatureKey');
+    const supervisorUser = appraisal.supervisorId as any;
+
+    // Existing supervisor answers — merge across any duplicate SupervisorSheets for this appraisal
+    const allSupSheets = await SupervisorSheet.find({ appraisalId: appraisal._id }).sort({ updatedAt: 1 });
     let supervisorAnswers: Record<string, any> = {};
     let supervisorStatus = 'not_started';
-    if (appraisal.supervisorSheetId) {
-      const supSheet = appraisal.supervisorSheetId as any;
-      supervisorAnswers = supSheet.answers || {};
-      supervisorStatus = supSheet.status || 'draft';
+    for (const s of allSupSheets) {
+      if (s.answers && typeof s.answers === 'object') {
+        for (const [k, v] of Object.entries(s.answers)) {
+          if (v !== undefined && v !== null && v !== '') {
+            supervisorAnswers[k] = v;
+          } else if (!(k in supervisorAnswers)) {
+            supervisorAnswers[k] = v;
+          }
+        }
+      }
+      if (s.status === 'submitted') {
+        supervisorStatus = 'submitted';
+      } else if (supervisorStatus !== 'submitted') {
+        supervisorStatus = s.status || 'draft';
+      }
     }
+    if (appraisal.supervisorSheetId) {
+      const primarySheet = appraisal.supervisorSheetId as any;
+      if (primarySheet?.answers) {
+        for (const [k, v] of Object.entries(primarySheet.answers)) {
+          if (v !== undefined && v !== null && v !== '') {
+            supervisorAnswers[k] = v;
+          }
+        }
+      }
+    }
+    // Normalize supervisor comment keys so both s_c1..s_c7 and s_r1_comment..s_r7_comment are always populated
+    for (let i = 1; i <= 7; i++) {
+      const cVal = supervisorAnswers[`s_c${i}`] ?? supervisorAnswers[`s_r${i}_comment`];
+      if (cVal !== undefined) {
+        supervisorAnswers[`s_c${i}`] = cVal;
+        supervisorAnswers[`s_r${i}_comment`] = cVal;
+      }
+    }
+
+    const traineeSheetDoc = appraisal.traineeSheetId as any;
+    const primarySupSheet = appraisal.supervisorSheetId as any;
 
     return NextResponse.json({
       appraisal: {
@@ -75,12 +135,33 @@ export async function GET(
         flags: appraisal.flags,
         traineeSubmittedAt: appraisal.traineeSubmittedAt,
         supervisorSubmittedAt: appraisal.supervisorSubmittedAt,
+        createdAt: appraisal.createdAt,
         cycleName: cycle.name,
+        cohort: cycle.cohort,
         supervisorDeadline: cycle.supervisorDeadline,
       },
+      supervisor: supervisorUser
+        ? {
+            _id: supervisorUser._id?.toString(),
+            name: supervisorUser.name,
+            staffId: supervisorUser.staffId,
+            email: supervisorUser.email,
+            department: supervisorUser.department,
+            location: supervisorUser.location,
+          }
+        : null,
       traineeAnswers: sanitizedTraineeAnswers,
-      rawTraineeAnswers: isHr && appraisal.traineeSheetId ? (appraisal.traineeSheetId as any).answers : sanitizedTraineeAnswers,
-      traineeSignatureSvg: appraisal.traineeSheetId ? ((appraisal.traineeSheetId as any).signatureSvg || (appraisal.traineeSheetId as any).signatureKey) : null,
+      rawTraineeAnswers: normalizedRawTraineeAnswers,
+      traineeSignatureSvg: traineeSheetDoc
+        ? traineeSheetDoc.signatureSvg || traineeSheetDoc.signatureKey || traineeSheetDoc.answers?.t_signature || traineeSheetDoc.answers?.t_signature_svg || null
+        : null,
+      supervisorSignatureSvg:
+        primarySupSheet?.signatureKey ||
+        primarySupSheet?.signatureSvg ||
+        supervisorAnswers?.s_signature_svg ||
+        supervisorAnswers?.s_signature ||
+        supervisorUser?.savedSignatureKey ||
+        null,
       supervisorAnswers,
       supervisorStatus,
       currentUserName: session.user.name || '',
@@ -120,28 +201,47 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // If already complete and not reopened, reject edit
-    if (appraisal.status === 'complete' && !isHr) {
+    // If already complete and not reopened, reject draft autosave so in-flight PUTs never overwrite submitted sheet
+    if (appraisal.status === 'complete' || appraisal.status === 'printed') {
       return NextResponse.json({ error: 'This appraisal has already been submitted.' }, { status: 400 });
     }
 
-    let sheet: any;
-    if (appraisal.supervisorSheetId) {
-      sheet = await SupervisorSheet.findById(appraisal.supervisorSheetId);
-      if (sheet) {
-        sheet.answers = { ...(sheet.answers || {}), ...answers };
-        sheet.status = 'draft';
-        await sheet.save();
+    // Normalize both s_c1..s_c7 and s_r1_comment..s_r7_comment in incoming answers
+    const normalizedIncoming: Record<string, any> = { ...(answers || {}) };
+    for (let i = 1; i <= 7; i++) {
+      const cVal = normalizedIncoming[`s_c${i}`] ?? normalizedIncoming[`s_r${i}_comment`];
+      if (cVal !== undefined) {
+        normalizedIncoming[`s_c${i}`] = cVal;
+        normalizedIncoming[`s_r${i}_comment`] = cVal;
       }
     }
 
+    // Find existing sheet by supervisorSheetId OR by appraisalId (prevents duplicate sheet creation on concurrent PUTs)
+    let sheet: any = null;
+    if (appraisal.supervisorSheetId) {
+      sheet = await SupervisorSheet.findById(appraisal.supervisorSheetId);
+    }
     if (!sheet) {
+      sheet = await SupervisorSheet.findOne({ appraisalId: appraisal._id }).sort({ updatedAt: -1 });
+    }
+
+    if (sheet) {
+      sheet.answers = { ...(sheet.answers || {}), ...normalizedIncoming };
+      sheet.markModified('answers');
+      if (sheet.status !== 'submitted') {
+        sheet.status = 'draft';
+      }
+      await sheet.save();
+      if (!appraisal.supervisorSheetId) {
+        appraisal.supervisorSheetId = sheet._id;
+      }
+    } else {
       const cycle = await Cycle.findById(appraisal.cycleId);
       sheet = await SupervisorSheet.create({
         appraisalId: appraisal._id,
         supervisorId: session.user.id,
         formVersionId: cycle?.supervisorFormVersionId,
-        answers: answers || {},
+        answers: normalizedIncoming,
         status: 'draft',
       });
       appraisal.supervisorSheetId = sheet._id;
@@ -205,25 +305,47 @@ export async function POST(
     const now = new Date();
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
-    let sheet: any;
-    if (appraisal.supervisorSheetId) {
-      sheet = await SupervisorSheet.findById(appraisal.supervisorSheetId);
-      if (sheet) {
-        sheet.answers = answers;
-        sheet.status = 'submitted';
-        sheet.submittedAt = now;
-        sheet.submitIp = ip;
-        await sheet.save();
+    // Normalize both s_c1..s_c7 and s_r1_comment..s_r7_comment in submitted answers
+    const normalizedSubmitted: Record<string, any> = { ...(answers || {}) };
+    for (let i = 1; i <= 7; i++) {
+      const cVal = normalizedSubmitted[`s_c${i}`] ?? normalizedSubmitted[`s_r${i}_comment`];
+      if (cVal !== undefined) {
+        normalizedSubmitted[`s_c${i}`] = cVal;
+        normalizedSubmitted[`s_r${i}_comment`] = cVal;
       }
     }
 
+    let sheet: any = null;
+    if (appraisal.supervisorSheetId) {
+      sheet = await SupervisorSheet.findById(appraisal.supervisorSheetId);
+    }
     if (!sheet) {
+      sheet = await SupervisorSheet.findOne({ appraisalId: appraisal._id }).sort({ updatedAt: -1 });
+    }
+
+    if (sheet) {
+      sheet.answers = { ...(sheet.answers || {}), ...normalizedSubmitted };
+      sheet.markModified('answers');
+      if (normalizedSubmitted.s_signature_svg) {
+        sheet.signatureKey = normalizedSubmitted.s_signature_svg;
+        sheet.signedAt = now;
+      }
+      sheet.status = 'submitted';
+      sheet.submittedAt = now;
+      sheet.submitIp = ip;
+      await sheet.save();
+      if (!appraisal.supervisorSheetId) {
+        appraisal.supervisorSheetId = sheet._id;
+      }
+    } else {
       const cycle = await Cycle.findById(appraisal.cycleId);
       sheet = await SupervisorSheet.create({
         appraisalId: appraisal._id,
         supervisorId: session.user.id,
         formVersionId: cycle?.supervisorFormVersionId,
-        answers,
+        answers: normalizedSubmitted,
+        signatureKey: normalizedSubmitted.s_signature_svg || null,
+        signedAt: normalizedSubmitted.s_signature_svg ? now : null,
         status: 'submitted',
         submittedAt: now,
         submitIp: ip,

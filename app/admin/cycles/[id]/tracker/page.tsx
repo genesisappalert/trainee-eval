@@ -238,22 +238,22 @@ export default function HrTrackerPage() {
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/admin/cycles" style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
+            <Link href="/admin/cycles" style={{ fontSize: 13, color: 'var(--text-dim)', textDecoration: 'none', fontWeight: 600 }}>
               ← Cycles
             </Link>
-            <span style={{ color: '#cbd5e1' }}>/</span>
-            <span style={{ fontSize: 13, color: '#002147', fontWeight: 700 }}>Tracker</span>
+            <span style={{ color: 'var(--border)' }}>/</span>
+            <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Tracker</span>
           </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: '#002147', margin: '4px 0 0 0' }}>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: '4px 0 0 0' }}>
             {cycle?.name || 'Assessment Tracker'}
           </h1>
-          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: 13 }}>
-            Cohort: <strong>{cycle?.cohort}</strong> • Public Link:{' '}
+          <p style={{ margin: '4px 0 0 0', color: 'var(--text-dim)', fontSize: 13 }}>
+            Cohort: <strong style={{ color: 'var(--text)' }}>{cycle?.cohort}</strong> • Public Link:{' '}
             <a
               href={`/a/${cycle?.slug}`}
               target="_blank"
               rel="noreferrer"
-              style={{ color: '#002147', fontWeight: 600, textDecoration: 'underline' }}
+              style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'underline' }}
             >
               /a/{cycle?.slug} ↗
             </a>
@@ -261,9 +261,13 @@ export default function HrTrackerPage() {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <Link
-            href={`/admin/print/bulk?cycleId=${id}&status=complete`}
+            href={
+              selectedIds.length > 0
+                ? `/admin/print/bulk?ids=${selectedIds.join(',')}`
+                : `/admin/print/bulk?cycleId=${id}&status=complete`
+            }
             style={{
               padding: '9px 18px',
               borderRadius: 8,
@@ -278,11 +282,15 @@ export default function HrTrackerPage() {
               boxShadow: '0 2px 6px rgba(0, 33, 71, 0.2)',
             }}
           >
-            🖨️ Print / Split ({counters.complete || 0})
+            🖨️ {selectedIds.length > 0 ? `Print Selected (${selectedIds.length})` : `Print / Split (${counters.complete || 0})`}
           </Link>
 
           <a
-            href={`/api/exports/zip?cycleId=${id}&status=complete`}
+            href={
+              selectedIds.length > 0
+                ? `/api/exports/zip?ids=${selectedIds.join(',')}`
+                : `/api/exports/zip?cycleId=${id}&status=complete`
+            }
             style={{
               padding: '9px 18px',
               borderRadius: 8,
@@ -297,11 +305,15 @@ export default function HrTrackerPage() {
               boxShadow: '0 2px 6px rgba(4, 120, 87, 0.2)',
             }}
           >
-            📦 Export ZIP ({counters.complete || 0})
+            📦 {selectedIds.length > 0 ? `Export Selected ZIP (${selectedIds.length})` : `Export ZIP (${counters.complete || 0})`}
           </a>
 
           <a
-            href={`/api/exports/excel?cycleId=${id}`}
+            href={
+              selectedIds.length > 0
+                ? `/api/exports/excel?cycleId=${id}&ids=${selectedIds.join(',')}`
+                : `/api/exports/excel?cycleId=${id}`
+            }
             style={{
               padding: '9px 18px',
               borderRadius: 8,
@@ -316,7 +328,7 @@ export default function HrTrackerPage() {
               boxShadow: '0 2px 6px rgba(22, 163, 74, 0.2)',
             }}
           >
-            📊 Export to Excel (.xlsx)
+            📊 {selectedIds.length > 0 ? `Export Selected Excel (${selectedIds.length})` : 'Export to Excel (.xlsx)'}
           </a>
         </div>
       </div>
@@ -328,45 +340,45 @@ export default function HrTrackerPage() {
         gap: 14,
         marginBottom: 24,
       }}>
-        <div style={{ background: '#fff', padding: 18, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-          <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Trainees</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#002147', marginTop: 4 }}>{counters.total || 0}</div>
+        <div style={{ background: 'var(--bg-card)', padding: 18, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Trainees</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginTop: 4 }}>{counters.total || 0}</div>
         </div>
 
-        <div style={{ background: '#fff', padding: 18, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-          <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Trainee In-Progress</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#475569', marginTop: 4 }}>{counters.traineeDraft || 0}</div>
+        <div style={{ background: 'var(--bg-card)', padding: 18, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Trainee In-Progress</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text-muted)', marginTop: 4 }}>{counters.traineeDraft || 0}</div>
         </div>
 
         <div style={{
-          background: counters.awaitingSupervisor > 0 ? '#fffbeb' : '#fff',
+          background: counters.awaitingSupervisor > 0 ? 'var(--warning-dim)' : 'var(--bg-card)',
           padding: 18,
           borderRadius: 12,
-          border: counters.awaitingSupervisor > 0 ? '1px solid #fde68a' : '1px solid #e2e8f0',
+          border: counters.awaitingSupervisor > 0 ? '1px solid rgba(217,119,6,0.3)' : '1px solid var(--border)',
         }}>
-          <div style={{ color: counters.awaitingSupervisor > 0 ? '#b45309' : '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ color: counters.awaitingSupervisor > 0 ? 'var(--warning)' : 'var(--text-dim)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>
             Awaiting Supervisor
           </div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: counters.awaitingSupervisor > 0 ? '#d97706' : '#002147', marginTop: 4 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: counters.awaitingSupervisor > 0 ? 'var(--warning)' : 'var(--text)', marginTop: 4 }}>
             {counters.awaitingSupervisor || 0}
           </div>
         </div>
 
-        <div style={{ background: '#fff', padding: 18, borderRadius: 12, border: '1px solid #e2e8f0' }}>
-          <div style={{ color: '#64748b', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Completed</div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#16a34a', marginTop: 4 }}>{counters.complete || 0}</div>
+        <div style={{ background: 'var(--bg-card)', padding: 18, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div style={{ color: 'var(--text-dim)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Completed</div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--success)', marginTop: 4 }}>{counters.complete || 0}</div>
         </div>
 
         <div style={{
-          background: (counters.needsReassignment + counters.unassigned) > 0 ? '#fef2f2' : '#fff',
+          background: (counters.needsReassignment + counters.unassigned) > 0 ? 'var(--danger-dim)' : 'var(--bg-card)',
           padding: 18,
           borderRadius: 12,
-          border: (counters.needsReassignment + counters.unassigned) > 0 ? '1px solid #fecaca' : '1px solid #e2e8f0',
+          border: (counters.needsReassignment + counters.unassigned) > 0 ? '1px solid rgba(220,38,38,0.3)' : '1px solid var(--border)',
         }}>
-          <div style={{ color: '#dc2626', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>
+          <div style={{ color: 'var(--danger)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>
             Flagged / Attention
           </div>
-          <div style={{ fontSize: 26, fontWeight: 800, color: '#dc2626', marginTop: 4 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--danger)', marginTop: 4 }}>
             {(counters.needsReassignment || 0) + (counters.unassigned || 0)}
           </div>
         </div>
@@ -374,22 +386,22 @@ export default function HrTrackerPage() {
 
       {/* Main Table Box */}
       <div style={{
-        background: '#fff',
+        background: 'var(--bg-card)',
         borderRadius: 16,
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow)',
         overflow: 'hidden',
       }}>
         {/* Table Filters Bar */}
         <div style={{
           padding: '16px 20px',
-          borderBottom: '1px solid #e2e8f0',
+          borderBottom: '1px solid var(--border)',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 12,
-          background: '#f8fafc',
+          background: 'var(--bg-3)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <input
@@ -400,11 +412,12 @@ export default function HrTrackerPage() {
               style={{
                 padding: '8px 14px',
                 borderRadius: 8,
-                border: '1px solid #cbd5e1',
+                border: '1px solid var(--border)',
                 fontSize: 13,
                 outline: 'none',
                 minWidth: 260,
-                background: '#fff',
+                background: 'var(--bg)',
+                color: 'var(--text)',
               }}
             />
 
@@ -415,10 +428,11 @@ export default function HrTrackerPage() {
                 style={{
                   padding: '8px 12px',
                   borderRadius: 8,
-                  border: '1px solid #cbd5e1',
+                  border: '1px solid var(--border)',
                   fontSize: 13,
                   outline: 'none',
-                  background: '#fff',
+                  background: 'var(--bg)',
+                  color: 'var(--text)',
                 }}
               >
                 <option value="all">All Departments</option>
@@ -431,7 +445,7 @@ export default function HrTrackerPage() {
             )}
           </div>
 
-          <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: 8, padding: 3 }}>
+          <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 3 }}>
             {[
               { val: 'all', label: 'All Records' },
               { val: 'awaiting', label: 'Awaiting Supervisor' },
@@ -449,9 +463,8 @@ export default function HrTrackerPage() {
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: statusFilter === tab.val ? '#fff' : 'transparent',
-                  color: statusFilter === tab.val ? '#002147' : '#64748b',
-                  boxShadow: statusFilter === tab.val ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  background: statusFilter === tab.val ? 'var(--accent)' : 'transparent',
+                  color: statusFilter === tab.val ? '#fff' : 'var(--text-dim)',
                 }}
               >
                 {tab.label}
@@ -462,11 +475,11 @@ export default function HrTrackerPage() {
 
         {/* Table Content */}
         {loading ? (
-          <div style={{ padding: 60, textAlign: 'center' }}>
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-dim)' }}>
             <p>Loading records...</p>
           </div>
         ) : filteredRows.length === 0 ? (
-          <div style={{ padding: 60, textAlign: 'center', color: '#64748b' }}>
+          <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-dim)' }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
             <div style={{ fontWeight: 600 }}>No trainee records found</div>
           </div>
@@ -474,7 +487,7 @@ export default function HrTrackerPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
+                <tr style={{ background: 'var(--bg-3)', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontWeight: 700 }}>
                   <th style={{ width: 36, padding: '12px 10px 12px 16px', textAlign: 'center' }}>
                     <input
                       type="checkbox"
@@ -504,12 +517,12 @@ export default function HrTrackerPage() {
                   <tr
                     key={row._id}
                     style={{
-                      borderBottom: '1px solid #f1f5f9',
+                      borderBottom: '1px solid var(--border)',
                       transition: 'background 0.15s',
-                      background: selectedIds.includes(row._id) ? '#f0fdf4' : 'transparent',
+                      background: selectedIds.includes(row._id) ? 'var(--success-dim)' : 'transparent',
                     }}
                     onMouseEnter={(e) => {
-                      if (!selectedIds.includes(row._id)) e.currentTarget.style.background = '#f8fafc';
+                      if (!selectedIds.includes(row._id)) e.currentTarget.style.background = 'var(--bg-3)';
                     }}
                     onMouseLeave={(e) => {
                       if (!selectedIds.includes(row._id)) e.currentTarget.style.background = 'transparent';
@@ -530,27 +543,27 @@ export default function HrTrackerPage() {
                       />
                     </td>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{row.traineeName}</div>
-                      <div style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>{row.traineeStaffId}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--text)' }}>{row.traineeName}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{row.traineeStaffId}</div>
                     </td>
                     <td style={{ padding: '14px 14px' }}>
-                      <div style={{ fontWeight: 600, color: '#334155' }}>{row.department || '—'}</div>
-                      <div style={{ fontSize: 11, color: '#94a3b8' }}>{row.location || '—'}</div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-muted)' }}>{row.department || '—'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{row.location || '—'}</div>
                     </td>
                     <td style={{ padding: '14px 14px' }}>
                       {row.supervisor ? (
                         <div>
-                          <div style={{ fontWeight: 600, color: '#002147' }}>{row.supervisor.name}</div>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>{row.supervisor.staffId}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{row.supervisor.name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>{row.supervisor.staffId}</div>
                         </div>
                       ) : (
-                        <span style={{ color: '#dc2626', fontWeight: 700 }}>Unassigned</span>
+                        <span style={{ color: 'var(--danger)', fontWeight: 700 }}>Unassigned</span>
                       )}
                     </td>
                     <td style={{ padding: '14px 14px' }}>
                       {getStatusBadge(row.status, row.flags)}
                     </td>
-                    <td style={{ padding: '14px 14px', color: '#64748b' }}>
+                    <td style={{ padding: '14px 14px', color: 'var(--text-dim)' }}>
                       {row.traineeSubmittedAt
                         ? new Date(row.traineeSubmittedAt).toLocaleDateString('en-GB')
                         : 'Not submitted'}
@@ -559,18 +572,18 @@ export default function HrTrackerPage() {
                       {row.status === 'awaiting_supervisor' || row.status === 'supervisor_draft' ? (
                         <span style={{
                           fontWeight: 700,
-                          color: row.daysOutstanding >= 7 ? '#dc2626' : row.daysOutstanding >= 3 ? '#d97706' : '#16a34a'
+                          color: row.daysOutstanding >= 7 ? 'var(--danger)' : row.daysOutstanding >= 3 ? 'var(--warning)' : 'var(--success)'
                         }}>
                           {row.daysOutstanding}d
                         </span>
                       ) : (
-                        <span style={{ color: '#94a3b8' }}>—</span>
+                        <span style={{ color: 'var(--text-dim)' }}>—</span>
                       )}
                     </td>
                     <td style={{ padding: '14px 14px' }}>
-                      <div style={{ fontSize: 11 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text)' }}>
                         <span>T: <strong>{row.traineeOverall || '—'}</strong></span>
-                        <span style={{ margin: '0 4px', color: '#cbd5e1' }}>|</span>
+                        <span style={{ margin: '0 4px', color: 'var(--border)' }}>|</span>
                         <span>S: <strong>{row.supervisorOverall || '—'}</strong></span>
                       </div>
                     </td>

@@ -53,7 +53,15 @@ export default function PrintableAppraisalPage() {
     );
   }
 
-  const { appraisal, traineeAnswers, rawTraineeAnswers, supervisorAnswers, traineeSignatureSvg } = data;
+  const {
+    appraisal,
+    supervisor,
+    traineeAnswers,
+    rawTraineeAnswers,
+    supervisorAnswers,
+    traineeSignatureSvg,
+    supervisorSignatureSvg,
+  } = data;
   const activeTraineeAnswers = isHrCopy && rawTraineeAnswers ? rawTraineeAnswers : traineeAnswers;
 
   const handlePrint = () => {
@@ -62,24 +70,24 @@ export default function PrintableAppraisalPage() {
 
   const traineeDocData = {
     traineeName: appraisal.traineeName,
-    supervisorName: supervisorAnswers?.s_signature_name || activeTraineeAnswers?.t_supervisor_other || '—',
+    supervisorName: supervisorAnswers?.s_signature_name || activeTraineeAnswers?.t_supervisor_other || supervisor?.name || '—',
     staffId: appraisal.traineeStaffId,
     appraisalDate: appraisal.traineeSubmittedAt || appraisal.createdAt,
     department: appraisal.department,
     location: appraisal.location,
     answers: activeTraineeAnswers || {},
-    signatureDataUrl: traineeSignatureSvg || activeTraineeAnswers?.t_signature,
+    signatureDataUrl: traineeSignatureSvg || activeTraineeAnswers?.t_signature || activeTraineeAnswers?.t_signature_svg,
   };
 
   const supervisorDocData = {
-    supervisorName: supervisorAnswers?.s_signature_name || '—',
+    supervisorName: supervisorAnswers?.s_signature_name || supervisor?.name || '—',
     traineeName: appraisal.traineeName,
-    staffId: supervisorAnswers?.s_staff_id || '—',
+    staffId: supervisorAnswers?.s_staff_id || appraisal.traineeStaffId || supervisor?.staffId || '—',
     appraisalDate: appraisal.supervisorSubmittedAt || supervisorAnswers?.s_signature_date,
     department: supervisorAnswers?.s_department || appraisal.department,
     location: supervisorAnswers?.s_location || appraisal.location,
     answers: supervisorAnswers || {},
-    signatureDataUrl: supervisorAnswers?.s_signature_svg || supervisorAnswers?.s_signature,
+    signatureDataUrl: supervisorSignatureSvg || supervisorAnswers?.s_signature_svg || supervisorAnswers?.s_signature,
   };
 
   return (

@@ -62,6 +62,18 @@ export async function GET(request: NextRequest) {
       .populate('supervisorId', 'name staffId email department location savedSignatureKey')
       .sort({ traineeName: 1 });
 
+    // Load all SupervisorSheets for these appraisals so comments from any duplicate sheets are merged
+    const appraisalIds = appraisals.map((a) => a._id);
+    const allSupSheets = await SupervisorSheet.find({ appraisalId: { $in: appraisalIds } }).sort({ updatedAt: 1 });
+    const supSheetsByAppraisal = new Map<string, any[]>();
+    for (const s of allSupSheets) {
+      const key = s.appraisalId.toString();
+      if (!supSheetsByAppraisal.has(key)) supSheetsByAppraisal.set(key, []);
+      supSheetsByAppraisal.get(key)!.push(s);
+    }
+
+    const CONFIDENTIAL_TRAINEE_KEYS = new Set(['t_r4', 't_c4', 't_r4_comment', 't_q3']);
+
     const items = appraisals.map((appraisal: any) => {
       const cycle = appraisal.cycleId as any;
       const traineeSheet = appraisal.traineeSheetId as any;
@@ -69,16 +81,51 @@ export async function GET(request: NextRequest) {
       const supervisor = appraisal.supervisorId as any;
 
       // Trainee answers (raw vs sanitized)
-      const rawTraineeAnswers = traineeSheet?.answers || {};
+      const rawTraineeAnswers: Record<string, any> = { ...(traineeSheet?.answers || {}) };
+      for (let i = 1; i <= 5; i++) {
+        const cVal = rawTraineeAnswers[`t_c${i}`] ?? rawTraineeAnswers[`t_r${i}_comment`];
+        if (cVal !== undefined) {
+          rawTraineeAnswers[`t_c${i}`] = cVal;
+          rawTraineeAnswers[`t_r${i}_comment`] = cVal;
+        }
+      }
+
       const sanitizedTraineeAnswers: Record<string, any> = {};
       for (const [key, value] of Object.entries(rawTraineeAnswers)) {
-        if (key === 't_r4' || key === 't_r4_comment' || key === 't_q3') {
+        if (CONFIDENTIAL_TRAINEE_KEYS.has(key)) {
           continue;
         }
         sanitizedTraineeAnswers[key] = value;
       }
 
-      const supervisorAnswers = supSheet?.answers || {};
+      // Merge supervisor answers across all sheets for this appraisal
+      const supervisorAnswers: Record<string, any> = {};
+      const sheetsForApp = supSheetsByAppraisal.get(appraisal._id.toString()) || [];
+      for (const s of sheetsForApp) {
+        if (s.answers && typeof s.answers === 'object') {
+          for (const [k, v] of Object.entries(s.answers)) {
+            if (v !== undefined && v !== null && v !== '') {
+              supervisorAnswers[k] = v;
+            } else if (!(k in supervisorAnswers)) {
+              supervisorAnswers[k] = v;
+            }
+          }
+        }
+      }
+      if (supSheet?.answers) {
+        for (const [k, v] of Object.entries(supSheet.answers)) {
+          if (v !== undefined && v !== null && v !== '') {
+            supervisorAnswers[k] = v;
+          }
+        }
+      }
+      for (let i = 1; i <= 7; i++) {
+        const cVal = supervisorAnswers[`s_c${i}`] ?? supervisorAnswers[`s_r${i}_comment`];
+        if (cVal !== undefined) {
+          supervisorAnswers[`s_c${i}`] = cVal;
+          supervisorAnswers[`s_r${i}_comment`] = cVal;
+        }
+      }
 
       const traineeSignatureSvg =
         traineeSheet?.signatureSvg ||

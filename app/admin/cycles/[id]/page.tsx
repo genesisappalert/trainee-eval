@@ -85,24 +85,23 @@ export default function CycleDetailPage() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '36px 24px' }}>
-      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <Link href="/admin/cycles" style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
+          <Link href="/admin/cycles" style={{ fontSize: 13, color: 'var(--text-dim)', textDecoration: 'none', fontWeight: 600 }}>
             ← Back to Cycles
           </Link>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#002147', margin: '8px 0 0 0' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', margin: '8px 0 0 0' }}>
             {cycle.name}
           </h1>
-          <p style={{ color: '#64748b', fontSize: 14, margin: '4px 0 0 0' }}>
-            Cohort: <strong>{cycle.cohort}</strong> • Public URL: <span style={{ fontFamily: 'monospace' }}>/a/{cycle.slug}</span>
+          <p style={{ color: 'var(--text-dim)', fontSize: 14, margin: '4px 0 0 0' }}>
+            Cohort: <strong style={{ color: 'var(--text)' }}>{cycle.cohort}</strong> • Public URL: <span style={{ fontFamily: 'var(--font-mono)' }}>/a/{cycle.slug}</span>
           </p>
         </div>
 
         <Link
           href={`/admin/cycles/${cycle._id}/tracker`}
+          className="gh-btn gh-btn-primary"
           style={{
-            background: '#002147',
-            color: '#fff',
             padding: '10px 20px',
             borderRadius: 8,
             textDecoration: 'none',
@@ -114,15 +113,15 @@ export default function CycleDetailPage() {
         </Link>
       </div>
 
-      <form onSubmit={handleSave} style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', padding: 32, boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-        <h2 style={{ fontSize: 16, fontWeight: 800, color: '#002147', margin: '0 0 20px 0' }}>
+      <form onSubmit={handleSave} style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: 32, boxShadow: 'var(--shadow)' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '0 0 20px 0' }}>
           Cycle Status & Submission Deadlines
         </h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Cycle State */}
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 8 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
               Cycle Lifecycle State:
             </label>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -140,8 +139,9 @@ export default function CycleDetailPage() {
                     gap: 8,
                     padding: '10px 14px',
                     borderRadius: 8,
-                    border: status === opt.val ? '2px solid #002147' : '1px solid #cbd5e1',
-                    background: status === opt.val ? '#f0fdf4' : '#fff',
+                    border: status === opt.val ? '2px solid var(--accent)' : '1px solid var(--border)',
+                    background: status === opt.val ? 'var(--accent-dim)' : 'var(--bg)',
+                    color: 'var(--text)',
                     cursor: 'pointer',
                     fontSize: 13,
                     fontWeight: 600,
@@ -162,7 +162,7 @@ export default function CycleDetailPage() {
           {/* Extend Deadlines */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Trainee Submission Deadline:
               </label>
               <input
@@ -170,15 +170,15 @@ export default function CycleDetailPage() {
                 required
                 value={traineeDeadline}
                 onChange={(e) => setTraineeDeadline(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                className="gh-input"
               />
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>
                 Trainees cannot submit after this date unless cycle is open or extended.
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#334155', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
                 Supervisor Review Deadline:
               </label>
               <input
@@ -186,17 +186,17 @@ export default function CycleDetailPage() {
                 required
                 value={supervisorDeadline}
                 onChange={(e) => setSupervisorDeadline(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                className="gh-input"
               />
-              <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4 }}>
                 Target completion date for supervisor assessments.
               </div>
             </div>
           </div>
 
           {/* Release Results Toggle */}
-          <div style={{ background: '#f8fafc', padding: 16, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+          <div style={{ background: 'var(--bg-3)', padding: 16, borderRadius: 8, border: '1px solid var(--border)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
               <input
                 type="checkbox"
                 checked={resultsReleased}
@@ -204,7 +204,7 @@ export default function CycleDetailPage() {
               />
               Release Assessment Results to Trainees
             </label>
-            <div style={{ fontSize: 12, color: '#64748b', marginTop: 4, marginLeft: 24 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, marginLeft: 24 }}>
               When enabled, trainees can view their completed supervisor ratings (excluding confidential items).
             </div>
           </div>
@@ -212,23 +212,16 @@ export default function CycleDetailPage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 16 }}>
             <Link
               href="/admin/cycles"
-              style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #cbd5e1', color: '#475569', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}
+              className="gh-btn gh-btn-ghost"
+              style={{ textDecoration: 'none' }}
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={saving}
-              style={{
-                padding: '10px 24px',
-                borderRadius: 8,
-                border: 'none',
-                background: '#002147',
-                color: '#fff',
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: 'pointer',
-              }}
+              className="gh-btn gh-btn-primary"
+              style={{ padding: '10px 24px', fontSize: 14 }}
             >
               {saving ? 'Saving...' : 'Save Settings'}
             </button>

@@ -87,25 +87,23 @@ export default function AdminCyclesPage() {
         marginBottom: 32,
       }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#002147', margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', margin: 0, letterSpacing: '-0.02em' }}>
             Assessment Cycles Management
           </h1>
-          <p style={{ margin: '6px 0 0 0', color: '#64748b', fontSize: 14 }}>
+          <p style={{ margin: '6px 0 0 0', color: 'var(--text-dim)', fontSize: 14 }}>
             Create and oversee periodic assessment cohorts, set submission deadlines, and monitor real-time completion.
           </p>
         </div>
 
         <Link
           href="/admin/cycles/new"
+          className="gh-btn gh-btn-primary"
           style={{
-            background: 'linear-gradient(135deg, #002147 0%, #0a3161 100%)',
-            color: '#fff',
             padding: '11px 22px',
             borderRadius: 8,
             textDecoration: 'none',
             fontWeight: 700,
             fontSize: 14,
-            boxShadow: '0 4px 12px rgba(0, 33, 71, 0.25)',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
@@ -117,17 +115,17 @@ export default function AdminCyclesPage() {
 
       {loading ? (
         <div style={{ padding: 60, textAlign: 'center' }}>
-          <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#002147', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-          <p style={{ marginTop: 16, color: '#64748b', fontSize: 14 }}>Loading cycles...</p>
+          <div style={{ display: 'inline-block', width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <p style={{ marginTop: 16, color: 'var(--text-dim)', fontSize: 14 }}>Loading cycles...</p>
           <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
         </div>
       ) : error ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#dc2626' }}>{error}</div>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--danger)' }}>{error}</div>
       ) : cycles.length === 0 ? (
-        <div style={{ background: '#fff', padding: 60, borderRadius: 16, textAlign: 'center', border: '1px solid #e2e8f0' }}>
+        <div style={{ background: 'var(--bg-card)', padding: 60, borderRadius: 16, textAlign: 'center', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a' }}>No assessment cycles found</h3>
-          <p style={{ color: '#64748b', fontSize: 14, marginTop: 4 }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>No assessment cycles found</h3>
+          <p style={{ color: 'var(--text-dim)', fontSize: 14, marginTop: 4 }}>
             Click "+ Create New Cycle" or run the seed data to create the initial cohort.
           </p>
         </div>
@@ -142,10 +140,10 @@ export default function AdminCyclesPage() {
               <div
                 key={cycle._id}
                 style={{
-                  background: '#fff',
+                  background: 'var(--bg-card)',
                   borderRadius: 16,
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
+                  border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow)',
                   padding: 28,
                   display: 'flex',
                   flexDirection: 'column',
@@ -155,15 +153,15 @@ export default function AdminCyclesPage() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     {getStatusBadge(cycle.status)}
-                    <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-dim)', fontWeight: 600 }}>
                       Cohort: {cycle.cohort}
                     </span>
                   </div>
 
-                  <h2 style={{ fontSize: 20, fontWeight: 800, color: '#002147', margin: 0 }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
                     {cycle.name}
                   </h2>
-                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4, fontFamily: 'monospace' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
                     Slug: /a/{cycle.slug}
                   </div>
 
@@ -171,23 +169,23 @@ export default function AdminCyclesPage() {
                   <div style={{
                     marginTop: 20,
                     padding: 14,
-                    background: '#f8fafc',
+                    background: 'var(--bg-3)',
                     borderRadius: 10,
-                    border: '1px solid #f1f5f9',
+                    border: '1px solid var(--border)',
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: 12,
                     fontSize: 12,
                   }}>
                     <div>
-                      <div style={{ color: '#64748b', fontWeight: 600 }}>Trainee Deadline:</div>
-                      <div style={{ color: '#0f172a', fontWeight: 700, marginTop: 2 }}>
+                      <div style={{ color: 'var(--text-dim)', fontWeight: 600 }}>Trainee Deadline:</div>
+                      <div style={{ color: 'var(--text)', fontWeight: 700, marginTop: 2 }}>
                         {new Date(cycle.traineeDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </div>
                     <div>
-                      <div style={{ color: '#64748b', fontWeight: 600 }}>Supervisor Deadline:</div>
-                      <div style={{ color: '#0f172a', fontWeight: 700, marginTop: 2 }}>
+                      <div style={{ color: 'var(--text-dim)', fontWeight: 600 }}>Supervisor Deadline:</div>
+                      <div style={{ color: 'var(--text)', fontWeight: 700, marginTop: 2 }}>
                         {new Date(cycle.supervisorDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </div>
@@ -196,26 +194,26 @@ export default function AdminCyclesPage() {
                   {/* Progress Stats */}
                   <div style={{ marginTop: 20 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
-                      <span style={{ color: '#334155' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>
                         {cycle.stats.complete} of {cycle.stats.total} Assessments Completed
                       </span>
-                      <span style={{ color: '#002147', fontWeight: 700 }}>{completionPercent}%</span>
+                      <span style={{ color: 'var(--text)', fontWeight: 700 }}>{completionPercent}%</span>
                     </div>
-                    <div style={{ width: '100%', height: 8, background: '#e2e8f0', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
                       <div
                         style={{
                           width: `${completionPercent}%`,
                           height: '100%',
-                          background: 'linear-gradient(90deg, #002147 0%, #16a34a 100%)',
+                          background: 'linear-gradient(90deg, var(--accent) 0%, var(--success) 100%)',
                           borderRadius: 4,
                         }}
                       />
                     </div>
 
-                    <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: '#64748b' }}>
-                      <span>⏳ Awaiting Supervisor: <strong>{cycle.stats.awaitingSupervisor}</strong></span>
+                    <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: 'var(--text-dim)' }}>
+                      <span>⏳ Awaiting Supervisor: <strong style={{ color: 'var(--text)' }}>{cycle.stats.awaitingSupervisor}</strong></span>
                       {cycle.stats.flagged > 0 && (
-                        <span style={{ color: '#dc2626' }}>
+                        <span style={{ color: 'var(--danger)' }}>
                           ⚠️ Flagged: <strong>{cycle.stats.flagged}</strong>
                         </span>
                       )}
@@ -224,10 +222,10 @@ export default function AdminCyclesPage() {
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
                   <Link
                     href={`/admin/cycles/${cycle._id}`}
-                    style={{ fontSize: 13, color: '#475569', fontWeight: 600, textDecoration: 'none' }}
+                    style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'none' }}
                   >
                     Edit & Settings →
                   </Link>
@@ -235,11 +233,10 @@ export default function AdminCyclesPage() {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <Link
                       href={`/admin/cycles/${cycle._id}/tracker`}
+                      className="gh-btn gh-btn-primary"
                       style={{
                         padding: '8px 16px',
                         borderRadius: 6,
-                        background: '#002147',
-                        color: '#fff',
                         textDecoration: 'none',
                         fontWeight: 700,
                         fontSize: 13,
