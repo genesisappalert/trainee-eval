@@ -184,6 +184,8 @@ export interface IAppraisal extends Document {
   rosterEntryId: mongoose.Types.ObjectId | null;
   traineeSheetId: mongoose.Types.ObjectId | null;
   supervisorSheetId: mongoose.Types.ObjectId | null;
+  supervisorEvalToken: string | null;
+  supervisorEvalTokenHash: string | null;
   releaseWithheld: boolean;
   traineeSubmittedAt: Date | null;
   supervisorSubmittedAt: Date | null;
@@ -219,6 +221,8 @@ const AppraisalSchema = new Schema<IAppraisal>(
     rosterEntryId: { type: Schema.Types.ObjectId, ref: 'RosterEntry', default: null },
     traineeSheetId: { type: Schema.Types.ObjectId, ref: 'TraineeSheet', default: null },
     supervisorSheetId: { type: Schema.Types.ObjectId, ref: 'SupervisorSheet', default: null },
+    supervisorEvalToken: { type: String, default: null, index: true },
+    supervisorEvalTokenHash: { type: String, default: null, index: true },
     releaseWithheld: { type: Boolean, default: false },
     traineeSubmittedAt: { type: Date, default: null },
     supervisorSubmittedAt: { type: Date, default: null },
@@ -232,6 +236,14 @@ const AppraisalSchema = new Schema<IAppraisal>(
 AppraisalSchema.index({ cycleId: 1, traineeStaffId: 1 });
 AppraisalSchema.index({ cycleId: 1, supervisorId: 1, status: 1 });
 
+if (process.env.NODE_ENV !== 'production') {
+  delete (mongoose.models as any).Appraisal;
+  delete (mongoose.models as any).SupervisorSheet;
+}
+if (process.env.NODE_ENV !== 'production') {
+  delete (mongoose.models as any).Appraisal;
+  delete (mongoose.models as any).SupervisorSheet;
+}
 export const Appraisal: Model<IAppraisal> =
   mongoose.models.Appraisal || mongoose.model<IAppraisal>('Appraisal', AppraisalSchema);
 
@@ -287,7 +299,7 @@ export const TraineeSheet: Model<ITraineeSheet> =
 
 export interface ISupervisorSheet extends Document {
   appraisalId: mongoose.Types.ObjectId;
-  supervisorId: mongoose.Types.ObjectId;
+  supervisorId: mongoose.Types.ObjectId | null;
   formVersionId: mongoose.Types.ObjectId;
   answers: Record<string, string | number>;
   signatureKey: string | null;
@@ -302,7 +314,7 @@ export interface ISupervisorSheet extends Document {
 const SupervisorSheetSchema = new Schema<ISupervisorSheet>(
   {
     appraisalId: { type: Schema.Types.ObjectId, ref: 'Appraisal', required: true, index: true },
-    supervisorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    supervisorId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     formVersionId: { type: Schema.Types.ObjectId, ref: 'FormVersion', required: true },
     answers: { type: Schema.Types.Mixed, default: {} },
     signatureKey: { type: String, default: null },

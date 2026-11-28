@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import connectDB from '@/lib/db';
 import { TraineeSheet, Appraisal } from '@/lib/models';
 
@@ -22,6 +22,14 @@ export async function POST(request: NextRequest) {
     }
 
     const appraisal = await Appraisal.findById(sheet.appraisalId);
+    // Ensure a submitted appraisal always has a supervisorEvalToken
+    if (appraisal && sheet.status === 'submitted' && !appraisal.supervisorEvalToken) {
+      const supToken = randomBytes(16).toString('hex');
+      appraisal.supervisorEvalToken = supToken;
+      appraisal.supervisorEvalTokenHash = createHash('sha256').update(supToken).digest('hex');
+      await appraisal.save();
+    }
+
     const normalizedAnswers: Record<string, any> = { ...(sheet.answers || {}) };
     for (let i = 1; i <= 5; i++) {
       const cVal = normalizedAnswers[`t_c${i}`] ?? normalizedAnswers[`t_r${i}_comment`];
@@ -38,6 +46,7 @@ export async function POST(request: NextRequest) {
       answers: normalizedAnswers,
       signatureKey: sheet.signatureKey || normalizedAnswers.t_signature_svg || null,
       submittedAt: sheet.submittedAt,
+      supervisorToken: appraisal?.supervisorEvalToken || null,
     });
   } catch (error) {
     console.error('Error resuming trainee draft:', error);

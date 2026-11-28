@@ -22,6 +22,7 @@ interface TrackerRow {
   traineeOverall: string | null;
   supervisorOverall: string | null;
   releaseWithheld: boolean;
+  supervisorToken?: string | null;
 }
 
 export default function HrTrackerPage() {
@@ -649,6 +650,30 @@ export default function HrTrackerPage() {
                           Reopen
                         </button>
 
+                        {/* Copy Direct Supervisor Evaluation Link */}
+                        {row.supervisorToken && (
+                          <button
+                            onClick={() => {
+                              const supUrl = `${window.location.origin}/s/${row.supervisorToken}`;
+                              navigator.clipboard.writeText(supUrl);
+                              alert(`Copied unique Supervisor Evaluation Link for ${row.traineeName}!\n\n${supUrl}`);
+                            }}
+                            title="Copy unique private link for the supervisor to evaluate this trainee without logging in"
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              background: 'var(--accent-dim)',
+                              border: '1px solid var(--accent-border)',
+                              color: 'var(--accent)',
+                              cursor: 'pointer',
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}
+                          >
+                            🔗 Sup. Link
+                          </button>
+                        )}
+
                         {/* Reissue Link */}
                         <button
                           onClick={() => {
@@ -667,7 +692,7 @@ export default function HrTrackerPage() {
                             fontWeight: 600,
                           }}
                         >
-                          Link
+                          Links
                         </button>
                       </div>
                     </td>
@@ -806,70 +831,87 @@ export default function HrTrackerPage() {
         </div>
       )}
 
-      {/* REISSUE LINK MODAL */}
+      {/* REISSUE / SHARE LINKS MODAL */}
       {modalType === 'reissue' && selectedRow && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 16, maxWidth: 500, width: '100%', padding: 28 }}>
-            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#002147' }}>Reissue Trainee Access Link</h3>
-            <p style={{ fontSize: 13, color: '#64748b', marginTop: 6 }}>
-              Generate a secure 128-bit private link for <strong>{selectedRow.traineeName}</strong> ({selectedRow.traineeEmail}).
+          <div style={{ background: 'var(--bg-card)', color: 'var(--text)', borderRadius: 16, border: '1px solid var(--border)', maxWidth: 540, width: '100%', padding: 28 }}>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>Direct Evaluation &amp; Trainee Links</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 6 }}>
+              Share the direct supervisor evaluation link or reissue a trainee resume token for <strong>{selectedRow.traineeName}</strong> ({selectedRow.traineeStaffId}).
             </p>
 
-            {reissuedUrl ? (
-              <div style={{ marginTop: 20, background: '#f8fafc', padding: 16, borderRadius: 8, border: '1px solid #cbd5e1' }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', marginBottom: 6 }}>
-                  ✓ New Link Generated:
+            {/* Direct Supervisor Evaluation Link */}
+            {selectedRow.supervisorToken && (
+              <div style={{ marginTop: 18, background: 'var(--accent-dim)', padding: 16, borderRadius: 10, border: '1px solid var(--accent-border)' }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', marginBottom: 4 }}>
+                  📨 Direct Supervisor Evaluation Link (No Login Required):
                 </div>
-                <div style={{ fontSize: 12, wordBreak: 'break-all', fontFamily: 'monospace', background: '#fff', padding: 8, border: '1px solid #e2e8f0', borderRadius: 4 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 8 }}>
+                  Send this link to the trainee&apos;s supervisor so they can evaluate {selectedRow.traineeName} directly:
+                </p>
+                <div style={{ fontSize: 12, wordBreak: 'break-all', fontFamily: 'var(--font-mono)', background: 'var(--bg)', padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}>
+                  {typeof window !== 'undefined' ? window.location.origin : ''}/s/{selectedRow.supervisorToken}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/s/${selectedRow.supervisorToken}`;
+                      navigator.clipboard.writeText(url);
+                      alert('Supervisor evaluation link copied to clipboard!');
+                    }}
+                    className="gh-btn gh-btn-primary"
+                    style={{ padding: '6px 14px', fontSize: 12 }}
+                  >
+                    📋 Copy Supervisor Link
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Trainee Link Reissue */}
+            {reissuedUrl ? (
+              <div style={{ marginTop: 16, background: 'var(--bg-3)', padding: 16, borderRadius: 10, border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--success)', marginBottom: 6 }}>
+                  ✓ New Trainee Resume Link Generated:
+                </div>
+                <div style={{ fontSize: 12, wordBreak: 'break-all', fontFamily: 'var(--font-mono)', background: 'var(--bg)', padding: 8, border: '1px solid var(--border)', borderRadius: 6 }}>
                   {reissuedUrl}
                 </div>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(reissuedUrl);
-                    alert('Copied to clipboard!');
+                    alert('Trainee link copied to clipboard!');
                   }}
-                  style={{
-                    marginTop: 10,
-                    padding: '6px 14px',
-                    borderRadius: 6,
-                    border: '1px solid #cbd5e1',
-                    background: '#fff',
-                    fontWeight: 600,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
+                  className="gh-btn gh-btn-ghost"
+                  style={{ marginTop: 10, padding: '6px 14px', fontSize: 12 }}
                 >
-                  📋 Copy Link to Clipboard
+                  📋 Copy Trainee Link
                 </button>
               </div>
             ) : (
-              <div style={{ marginTop: 20 }}>
-                <p style={{ fontSize: 13, color: '#334155' }}>
-                  Clicking generate will invalidate any previous access links and create a new resume token for this trainee.
+              <div style={{ marginTop: 16, padding: 14, borderRadius: 10, background: 'var(--bg-3)', border: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                  Trainee Self-Assessment Resume Link
+                </div>
+                <p style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 10 }}>
+                  Need to reissue the trainee&apos;s own link? Clicking below will generate a new trainee resume token.
                 </p>
                 <button
                   onClick={handleReissue}
                   disabled={modalSubmitting}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: '#002147',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                  }}
+                  className="gh-btn gh-btn-ghost"
+                  style={{ padding: '8px 16px', fontSize: 12 }}
                 >
-                  {modalSubmitting ? 'Generating...' : 'Generate New Link'}
+                  {modalSubmitting ? 'Generating...' : 'Generate New Trainee Link'}
                 </button>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
               <button
                 onClick={() => setModalType(null)}
-                style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+                className="gh-btn gh-btn-ghost"
+                style={{ padding: '8px 16px', fontSize: 13 }}
               >
                 Close
               </button>

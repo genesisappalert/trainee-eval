@@ -415,16 +415,17 @@ export async function GET(request: NextRequest) {
         lEntry.traineeScoreCount++;
       }
 
-      // Supervisor aggregation
+      // Supervisor aggregation (supports both registered User supervisors and direct-link supervisors)
       const sup = a.supervisorId as any;
-      if (sup && sup._id) {
-        const supId = sup._id.toString();
-        if (!supervisorPerfMap.has(supId)) {
-          supervisorPerfMap.set(supId, {
-            supervisorId: supId,
-            name: sup.name,
-            staffId: sup.staffId,
-            department: sup.department || '—',
+      const resolvedSupName = sup?.name || sAnswers.s_signature_name || tAnswers.t_supervisor_other || null;
+      const resolvedSupId = sup?._id ? sup._id.toString() : resolvedSupName ? `direct:${String(resolvedSupName).toLowerCase().trim()}` : null;
+      if (resolvedSupId && resolvedSupName) {
+        if (!supervisorPerfMap.has(resolvedSupId)) {
+          supervisorPerfMap.set(resolvedSupId, {
+            supervisorId: resolvedSupId,
+            name: String(resolvedSupName),
+            staffId: sup?.staffId || 'Direct Link',
+            department: sup?.department || deptName || '—',
             assigned: 0,
             completed: 0,
             pending: 0,
@@ -434,7 +435,7 @@ export async function GET(request: NextRequest) {
             turnaroundDaysCount: 0,
           });
         }
-        const sPerf = supervisorPerfMap.get(supId)!;
+        const sPerf = supervisorPerfMap.get(resolvedSupId)!;
         sPerf.assigned++;
         if (a.status === 'complete' || a.status === 'printed') {
           sPerf.completed++;
@@ -460,8 +461,8 @@ export async function GET(request: NextRequest) {
         location: locName,
         cycleName: (a.cycleId as any)?.name || '',
         cohort: (a.cycleId as any)?.cohort || '',
-        supervisorName: sup?.name || tAnswers.t_supervisor_other || 'Unassigned',
-        supervisorStaffId: sup?.staffId || '—',
+        supervisorName: sup?.name || sAnswers.s_signature_name || tAnswers.t_supervisor_other || 'Unassigned',
+        supervisorStaffId: sup?.staffId || (sAnswers.s_signature_name ? 'Direct Link' : '—'),
         status: a.status,
         flags: a.flags || [],
         traineeAvg,

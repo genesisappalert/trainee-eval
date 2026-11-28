@@ -178,6 +178,9 @@ export default function TraineeFormPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [tokenCopied, setTokenCopied] = useState(false);
+  const [supervisorToken, setSupervisorToken] = useState<string | null>(null);
+  const [supLinkCopied, setSupLinkCopied] = useState(false);
+  const [supMsgCopied, setSupMsgCopied] = useState(false);
   const [formMode, setFormMode] = useState<'steps' | 'paper'>('steps');
 
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -240,6 +243,7 @@ export default function TraineeFormPage() {
         const data = await res.json();
         setAnswers(data.answers || {});
         if (data.signatureKey) setSignatureData(data.signatureKey);
+        if (data.supervisorToken) setSupervisorToken(data.supervisorToken);
         if (data.status === 'submitted') {
           setSubmitted(true);
         }
@@ -266,6 +270,9 @@ export default function TraineeFormPage() {
       });
       const data = await res.json();
       const activeToken = data.token || token;
+      if (data.supervisorToken) {
+        setSupervisorToken(data.supervisorToken);
+      }
       if (data.token && !token) {
         setToken(data.token);
         // Update URL with token for resume
@@ -413,6 +420,10 @@ export default function TraineeFormPage() {
       });
 
       if (res.ok) {
+        const data = await res.json();
+        if (data.supervisorToken) {
+          setSupervisorToken(data.supervisorToken);
+        }
         setSubmitted(true);
       } else {
         const data = await res.json();
@@ -432,6 +443,29 @@ export default function TraineeFormPage() {
     navigator.clipboard.writeText(link);
     setTokenCopied(true);
     setTimeout(() => setTokenCopied(false), 2000);
+  };
+
+  /* ── Copy supervisor evaluation link & message ─────────── */
+  const copySupervisorLink = () => {
+    if (!supervisorToken) return;
+    const link = `${window.location.origin}/s/${supervisorToken}`;
+    navigator.clipboard.writeText(link);
+    setSupLinkCopied(true);
+    setTimeout(() => setSupLinkCopied(false), 2500);
+  };
+
+  const copySupervisorMessage = () => {
+    if (!supervisorToken) return;
+    const link = `${window.location.origin}/s/${supervisorToken}`;
+    const supName =
+      supervisors.find((s) => s.id === answers.t_supervisor)?.name ||
+      (answers.t_supervisor_other ? answers.t_supervisor_other.split(/[—\-/(]/)[0].trim() : 'Supervisor');
+    const traineeName = answers.t_name || 'Management Trainee';
+    const staffId = answers.t_staff_id ? ` (${answers.t_staff_id})` : '';
+    const msg = `Hello ${supName},\n\nI have completed my Genesis Group Management Trainee Programme (MTP) Self-Assessment for ${traineeName}${staffId}.\n\nPlease use this unique private link to complete my Supervisor Evaluation (no login required):\n${link}\n\nThank you!`;
+    navigator.clipboard.writeText(msg);
+    setSupMsgCopied(true);
+    setTimeout(() => setSupMsgCopied(false), 2500);
   };
 
   /* ── Get field by ID ───────────────────────────────────── */
@@ -572,19 +606,22 @@ export default function TraineeFormPage() {
                     style={{
                       padding: '12px 14px',
                       cursor: 'pointer',
-                      borderTop: '1px solid #fde68a',
-                      color: '#b45309',
-                      background: '#fffbeb',
+                      borderTop: '1px solid #bfdbfe',
+                      color: '#1d4ed8',
+                      background: '#eff6ff',
                       fontSize: '0.875rem',
                       fontWeight: 600,
                     }}
                     onMouseDown={() => {
                       handleChange(fieldId, 'unassigned');
+                      if (supervisorSearch.trim() && !answers['t_supervisor_other']) {
+                        handleChange('t_supervisor_other', supervisorSearch.trim());
+                      }
                       setShowSupervisorDropdown(false);
                       setSupervisorSearch('');
                     }}
                   >
-                    ⚠️ My supervisor isn&apos;t listed
+                    ✍️ My supervisor isn&apos;t listed — Enter supervisor name &amp; get a direct link to send them
                   </div>
                 </div>
               )}
@@ -593,17 +630,17 @@ export default function TraineeFormPage() {
 
             {/* If supervisor isn't listed, show input for supervisor name & department */}
             {value === 'unassigned' && (
-              <div style={{ marginTop: 12, padding: 14, background: '#fffbeb', borderRadius: 8, border: '1px solid #fde68a' }}>
-                <label className="form-label text-sm" style={{ color: '#92400e', marginBottom: 4, display: 'block' }}>
-                  Specify your supervisor&apos;s name and department <span className="required">*</span>
+              <div style={{ marginTop: 12, padding: 14, background: 'var(--info-light)', borderRadius: 8, border: '1px solid rgba(37, 99, 235, 0.3)' }}>
+                <label className="form-label text-sm" style={{ color: 'var(--info-dark)', marginBottom: 4, display: 'block' }}>
+                  Enter your supervisor&apos;s full name (and department) <span className="required">*</span>
                 </label>
-                <p className="text-xs text-muted" style={{ marginBottom: 8, color: '#78350f' }}>
-                  HR will route this assessment to your supervisor once submitted.
+                <p className="text-xs" style={{ marginBottom: 8, color: 'var(--text-secondary)' }}>
+                  Once you submit your self-assessment, a <strong>unique private evaluation link</strong> will be generated immediately so you can send it directly to your supervisor to complete their evaluation (no supervisor login required).
                 </p>
                 <input
                   type="text"
                   className={`form-input ${validationErrors['t_supervisor_other'] ? 'error' : ''}`}
-                  placeholder="e.g. John Doe — Internal Audit / Lekki branch"
+                  placeholder="e.g. Mr. John Doe — Restaurant Operations"
                   value={answers['t_supervisor_other'] || ''}
                   onChange={(e) => handleChange('t_supervisor_other', e.target.value)}
                   maxLength={120}
@@ -851,10 +888,69 @@ export default function TraineeFormPage() {
                 </svg>
               </div>
               <h2 style={{ marginBottom: 'var(--space-2)' }}>Submitted Successfully!</h2>
-              <p className="text-muted" style={{ maxWidth: 480, margin: '0 auto var(--space-6)' }}>
-                Your self-assessment has been submitted and sent to your supervisor for review.
-                You&apos;ll receive an email confirmation shortly.
+              <p className="text-muted" style={{ maxWidth: 520, margin: '0 auto var(--space-6)' }}>
+                Your self-assessment has been recorded. You can now share the unique supervisor evaluation link below directly with your supervisor so they can complete your evaluation immediately.
               </p>
+
+              {supervisorToken && (
+                <div style={{
+                  padding: '20px 22px',
+                  background: 'var(--accent-dim)',
+                  border: '1.5px solid var(--accent-border)',
+                  borderRadius: 14,
+                  marginBottom: 'var(--space-6)',
+                  textAlign: 'left',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      📨 Send to Your Supervisor — Direct Evaluation Link
+                    </span>
+                    <span className="gh-badge gh-badge-complete">No Supervisor Login Required</span>
+                  </div>
+                  <p className="text-xs text-muted" style={{ marginBottom: 12, lineHeight: 1.5 }}>
+                    Copy and send this unique link to your supervisor (<strong>{supervisors.find((s) => s.id === answers.t_supervisor)?.name || answers.t_supervisor_other || 'your direct manager'}</strong>) via WhatsApp, Teams, or Email. It opens your evaluation form directly for them.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+                    <code className="text-xs" style={{
+                      flex: 1,
+                      minWidth: 220,
+                      padding: '10px 12px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 700,
+                    }}>
+                      {typeof window !== 'undefined' ? window.location.origin : ''}/s/{supervisorToken}
+                    </code>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={copySupervisorLink}>
+                      {supLinkCopied ? '✓ Link Copied!' : '📋 Copy Supervisor Link'}
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={copySupervisorMessage}
+                    >
+                      {supMsgCopied ? '✓ Message Copied!' : '💬 Copy Ready-to-Send Message (WhatsApp / Email)'}
+                    </button>
+                    <a
+                      href={`/s/${supervisorToken}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-ghost btn-sm"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      Open Supervisor Link ↗
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {token && (
                 <div style={{
@@ -862,9 +958,10 @@ export default function TraineeFormPage() {
                   background: 'var(--bg-tertiary)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: 'var(--space-4)',
+                  textAlign: 'left',
                 }}>
                   <p className="text-xs text-muted" style={{ marginBottom: 'var(--space-2)' }}>
-                    <strong>Your private link</strong> — bookmark this to view your submitted assessment:
+                    <strong>Your Trainee Link</strong> — bookmark this to revisit this page or re-copy your supervisor link anytime:
                   </p>
                   <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                     <code className="text-xs" style={{
@@ -876,7 +973,7 @@ export default function TraineeFormPage() {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>
-                      {window.location.origin}/a/{slug}#{token}
+                      {typeof window !== 'undefined' ? window.location.origin : ''}/a/{slug}#{token}
                     </code>
                     <button className="btn btn-secondary btn-sm" onClick={copyTokenLink}>
                       {tokenCopied ? '✓ Copied' : 'Copy'}

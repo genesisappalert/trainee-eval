@@ -42,37 +42,66 @@ export async function GET(
     };
 
     const now = new Date().getTime();
-    const rows = appraisals.map((a) => {
-      const sup = a.supervisorId as any;
-      const tSheet = a.traineeSheetId as any;
-      const sSheet = a.supervisorSheetId as any;
+    const rows = await Promise.all(
+      appraisals.map(async (a) => {
+        const sup = a.supervisorId as any;
+        const tSheet = a.traineeSheetId as any;
+        const sSheet = a.supervisorSheetId as any;
 
-      let daysOutstanding = 0;
-      if (a.traineeSubmittedAt && a.status !== 'complete') {
-        const submitted = new Date(a.traineeSubmittedAt).getTime();
-        daysOutstanding = Math.floor((now - submitted) / (1000 * 60 * 60 * 24));
-      }
+        // Ensure every appraisal has a supervisorEvalToken so HR or trainee can share it anytime
+        if (!a.supervisorEvalToken) {
+          const supToken = randomBytes(16).toString('hex');
+          a.supervisorEvalToken = supToken;
+          a.supervisorEvalTokenHash = createHash('sha256').update(supToken).digest('hex');
+          await Appraisal.updateOne(
+            { _id: a._id },
+            {
+              $set: {
+                supervisorEvalToken: a.supervisorEvalToken,
+                supervisorEvalTokenHash: a.supervisorEvalTokenHash,
+              },
+            }
+          );
+        }
 
-      return {
-        _id: a._id.toString(),
-        traineeStaffId: a.traineeStaffId,
-        traineeName: a.traineeName,
-        traineeEmail: a.traineeEmail,
-        department: a.department,
-        location: a.location,
-        supervisor: sup ? { _id: sup._id.toString(), name: sup.name, staffId: sup.staffId, email: sup.email } : null,
-        status: a.status,
-        flags: a.flags,
-        traineeSubmittedAt: a.traineeSubmittedAt,
-        supervisorSubmittedAt: a.supervisorSubmittedAt,
-        daysOutstanding,
-        hasTraineeSheet: !!tSheet,
-        hasSupervisorSheet: !!sSheet,
-        traineeOverall: tSheet?.answers?.t_overall || null,
-        supervisorOverall: sSheet?.answers?.s_overall || null,
-        releaseWithheld: a.releaseWithheld,
-      };
-    });
+        let daysOutstanding = 0;
+        if (a.traineeSubmittedAt && a.status !== 'complete') {
+          const submitted = new Date(a.traineeSubmittedAt).getTime();
+          daysOutstanding = Math.floor((now - submitted) / (1000 * 60 * 60 * 24));
+        }
+
+        const directSupervisorName =
+          sSheet?.answers?.s_signature_name ||
+          tSheet?.answers?.t_supervisor_other ||
+          null;
+
+        return {
+          _id: a._id.toString(),
+          traineeStaffId: a.traineeStaffId,
+          traineeName: a.traineeName,
+          traineeEmail: a.traineeEmail,
+          department: a.department,
+          location: a.location,
+          supervisor: sup
+            ? { _id: sup._id.toString(), name: sup.name, staffId: sup.staffId, email: sup.email }
+            : directSupervisorName
+            ? { _id: '', name: String(directSupervisorName), staffId: 'Direct Link', email: '' }
+            : null,
+          status: a.status,
+          flags: a.flags,
+          traineeSubmittedAt: a.traineeSubmittedAt,
+          supervisorSubmittedAt: a.supervisorSubmittedAt,
+          daysOutstanding,
+          hasTraineeSheet: !!tSheet,
+          hasSupervisorSheet: !!sSheet,
+          traineeOverall: tSheet?.answers?.t_overall || null,
+          supervisorOverall: sSheet?.answers?.s_overall || null,
+          releaseWithheld: a.releaseWithheld,
+          supervisorToken: a.supervisorEvalToken || null,
+          supervisorEvalToken: a.supervisorEvalToken || null,
+        };
+      })
+    );
 
     // Supervisors for reassign picker
     const allSupervisors = await User.find({ roles: 'supervisor', active: true })
@@ -190,6 +219,13 @@ export async function POST(
         await TraineeSheet.findByIdAndUpdate(appraisal.traineeSheetId, { tokenHash });
       }
 
+      if (!appraisal.supervisorEvalToken) {
+        const supToken = randomBytes(16).toString('hex');
+        appraisal.supervisorEvalToken = supToken;
+        appraisal.supervisorEvalTokenHash = createHash('sha256').update(supToken).digest('hex');
+        await appraisal.save();
+      }
+
       await AuditLog.create({
         actorId: session.user.id,
         actorRole: 'hr_admin',
@@ -201,13 +237,44 @@ export async function POST(
       });
 
       const cycle = await Cycle.findById(appraisal.cycleId);
-      const resumeUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/a/${cycle?.slug}?token=${newToken}`;
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      const resumeUrl = `${baseUrl}/a/${cycle?.slug}#${newToken}`;
+      const supervisorUrl = `${baseUrl}/s/${appraisal.supervisorEvalToken}`;
 
       return NextResponse.json({
         success: true,
         message: 'New trainee access link generated',
         token: newToken,
         resumeUrl,
+        supervisorToken: appraisal.supervisorEvalToken,
+        supervisorUrl,
+      });
+    }
+
+    if (action === 'reissue_supervisor_link') {
+      const supToken = randomBytes(16).toString('hex');
+      appraisal.supervisorEvalToken = supToken;
+      appraisal.supervisorEvalTokenHash = createHash('sha256').update(supToken).digest('hex');
+      await appraisal.save();
+
+      await AuditLog.create({
+        actorId: session.user.id,
+        actorRole: 'hr_admin',
+        action: 'supervisor_link_reissued',
+        targetType: 'appraisal',
+        targetId: appraisal._id.toString(),
+        cycleId: appraisal.cycleId,
+        metadata: { traineeName: appraisal.traineeName, traineeStaffId: appraisal.traineeStaffId },
+      });
+
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      const supervisorUrl = `${baseUrl}/s/${supToken}`;
+
+      return NextResponse.json({
+        success: true,
+        message: 'New supervisor evaluation link generated',
+        supervisorToken: supToken,
+        supervisorUrl,
       });
     }
 

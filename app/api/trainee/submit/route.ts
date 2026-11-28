@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import { TraineeSheet, Appraisal, Cycle, RosterEntry, AuditLog } from '@/lib/models';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 // POST /api/trainee/submit — Submit a completed trainee sheet
 export async function POST(request: NextRequest) {
@@ -94,6 +94,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Generate unique private supervisor evaluation token if not already present
+    if (!appraisal.supervisorEvalToken) {
+      const supToken = randomBytes(16).toString('hex');
+      appraisal.supervisorEvalToken = supToken;
+      appraisal.supervisorEvalTokenHash = createHash('sha256').update(supToken).digest('hex');
+    }
+
     appraisal.status = 'awaiting_supervisor';
     appraisal.traineeSubmittedAt = now;
     await appraisal.save();
@@ -116,6 +123,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Your appraisal has been submitted successfully.',
+      supervisorToken: appraisal.supervisorEvalToken,
+      appraisalId: appraisal._id.toString(),
     });
   } catch (error) {
     console.error('Error submitting trainee sheet:', error);

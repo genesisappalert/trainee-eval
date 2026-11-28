@@ -199,7 +199,9 @@ export async function POST(
       flags.push('unassigned');
     }
 
-    // Create appraisal record
+    // Create appraisal record with unique private supervisor evaluation token
+    const supervisorEvalToken = randomBytes(16).toString('hex');
+    const supervisorEvalTokenHash = createHash('sha256').update(supervisorEvalToken).digest('hex');
     const appraisalDoc = await Appraisal.create({
       cycleId: cycle._id,
       traineeStaffId: cleanStaffId,
@@ -208,6 +210,8 @@ export async function POST(
       department: normalizedAnswers.t_department || matchedRoster?.department || '',
       location: normalizedAnswers.t_location || matchedRoster?.location || '',
       supervisorId,
+      supervisorEvalToken,
+      supervisorEvalTokenHash,
       rosterEntryId: matchedRoster ? matchedRoster._id : null,
       status: 'trainee_draft',
       flags,
@@ -237,6 +241,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       token: newToken,
+      supervisorToken: supervisorEvalToken,
       appraisalId: appraisal._id.toString(),
     });
   } catch (error) {
